@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { serviceSchema } from '@/lib/validations/business'
+import { revalidatePath } from 'next/cache'
 
 export async function createService(
 	businessId: string,
@@ -40,6 +41,7 @@ export async function createService(
 		await supabase.from('service_workers').insert(rows)
 	}
 
+	revalidatePath('/dashboard/services')
 	return { success: true }
 }
 
@@ -80,6 +82,7 @@ export async function updateService(
 		await supabase.from('service_workers').insert(rows)
 	}
 
+	revalidatePath('/dashboard/services')
 	return { success: true }
 }
 
@@ -94,5 +97,7 @@ export async function deleteService(serviceId: string) {
 		.eq('id', serviceId)
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/services')
 	return { success: true }
 }

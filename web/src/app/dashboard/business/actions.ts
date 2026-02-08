@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { businessHoursSchema, businessProfileSchema } from '@/lib/validations/business'
+import { revalidatePath } from 'next/cache'
 
 export async function updateBusinessProfile(businessId: string, data: Record<string, unknown>) {
 	const supabase = await createClient()
@@ -31,6 +32,8 @@ export async function updateBusinessProfile(businessId: string, data: Record<str
 		.eq('owner_id', user.id)
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/business')
 	return { success: true }
 }
 
@@ -60,6 +63,8 @@ export async function updateBusinessHours(
 		.upsert(rows, { onConflict: 'business_id,day_of_week' })
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/business')
 	return { success: true }
 }
 
@@ -83,5 +88,7 @@ export async function updateBusinessSettings(
 		.eq('owner_id', user.id)
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/business')
 	return { success: true }
 }

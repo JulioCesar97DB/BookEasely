@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { workerSchema } from '@/lib/validations/business'
+import { revalidatePath } from 'next/cache'
 
 export async function addWorker(businessId: string, data: Record<string, unknown>) {
 	const supabase = await createClient()
@@ -23,6 +24,8 @@ export async function addWorker(businessId: string, data: Record<string, unknown
 	})
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/workers')
 	return { success: true }
 }
 
@@ -47,6 +50,8 @@ export async function updateWorker(workerId: string, data: Record<string, unknow
 		.eq('id', workerId)
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/workers')
 	return { success: true }
 }
 
@@ -61,6 +66,8 @@ export async function toggleWorkerActive(workerId: string, isActive: boolean) {
 		.eq('id', workerId)
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/workers')
 	return { success: true }
 }
 
@@ -85,6 +92,9 @@ export async function upsertWorkerAvailability(
 	const { error } = await supabase.from('worker_availability').insert(rows)
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/workers')
+	revalidatePath('/dashboard/schedule')
 	return { success: true }
 }
 
@@ -105,6 +115,9 @@ export async function addBlockedDate(
 	})
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/workers')
+	revalidatePath('/dashboard/schedule')
 	return { success: true }
 }
 
@@ -119,5 +132,8 @@ export async function removeBlockedDate(blockedDateId: string) {
 		.eq('id', blockedDateId)
 
 	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/workers')
+	revalidatePath('/dashboard/schedule')
 	return { success: true }
 }

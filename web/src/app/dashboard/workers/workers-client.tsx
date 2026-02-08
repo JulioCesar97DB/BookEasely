@@ -11,7 +11,6 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Worker, WorkerAvailability, WorkerBlockedDate } from '@/lib/types'
 import { motion } from 'framer-motion'
 import { CalendarOff, ChevronDown, ChevronUp, Clock, Loader2, Plus, Trash2, UserPlus, Users } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { addBlockedDate, addWorker, removeBlockedDate, updateWorker, upsertWorkerAvailability } from './actions'
@@ -51,7 +50,6 @@ export function WorkersClient({
 	blockedDates,
 	ownerIsWorker,
 }: Props) {
-	const router = useRouter()
 	const [sheetOpen, setSheetOpen] = useState(false)
 	const [editingWorker, setEditingWorker] = useState<Worker | null>(null)
 	const [expandedWorker, setExpandedWorker] = useState<string | null>(null)
@@ -113,7 +111,6 @@ export function WorkersClient({
 		} else {
 			toast.success(editingWorker ? 'Worker updated' : 'Worker added')
 			setSheetOpen(false)
-			router.refresh()
 		}
 	}
 
@@ -331,7 +328,6 @@ function AvailabilitySection({
 	workerId: string
 	availability: WorkerAvailability[]
 }) {
-	const router = useRouter()
 	const [saving, setSaving] = useState(false)
 	const [schedule, setSchedule] = useState(() =>
 		DAYS.map((_, i) => {
@@ -357,7 +353,6 @@ function AvailabilitySection({
 			toast.error(result.error)
 		} else {
 			toast.success('Availability updated')
-			router.refresh()
 		}
 	}
 
@@ -413,7 +408,6 @@ function BlockedDatesSection({
 	workerId: string
 	blockedDates: WorkerBlockedDate[]
 }) {
-	const router = useRouter()
 	const [adding, setAdding] = useState(false)
 	const [saving, setSaving] = useState(false)
 	const [newDate, setNewDate] = useState('')
@@ -434,7 +428,6 @@ function BlockedDatesSection({
 			setAdding(false)
 			setNewDate('')
 			setNewReason('')
-			router.refresh()
 		}
 	}
 
@@ -444,7 +437,6 @@ function BlockedDatesSection({
 			toast.error(result.error)
 		} else {
 			toast.success('Blocked date removed')
-			router.refresh()
 		}
 	}
 

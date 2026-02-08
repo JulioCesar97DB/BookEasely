@@ -2,8 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { WorkersClient } from './workers-client'
 
-export const dynamic = 'force-dynamic'
-
 export default async function WorkersPage() {
 	const supabase = await createClient()
 	const { data: { user } } = await supabase.auth.getUser()

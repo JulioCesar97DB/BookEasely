@@ -29,7 +29,6 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Service, ServiceWorker, Worker } from '@/lib/types'
 import { motion } from 'framer-motion'
 import { ClipboardList, Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { createService, deleteService, updateService } from './actions'
@@ -71,7 +70,6 @@ const emptyForm: FormState = {
 }
 
 export function ServicesClient({ businessId, services, workers, serviceWorkers }: Props) {
-	const router = useRouter()
 	const [sheetOpen, setSheetOpen] = useState(false)
 	const [editingService, setEditingService] = useState<Service | null>(null)
 	const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -140,7 +138,6 @@ export function ServicesClient({ businessId, services, workers, serviceWorkers }
 		} else {
 			toast.success(editingService ? 'Service updated' : 'Service created')
 			setSheetOpen(false)
-			router.refresh()
 		}
 	}
 
@@ -154,7 +151,6 @@ export function ServicesClient({ businessId, services, workers, serviceWorkers }
 		} else {
 			toast.success('Service deleted')
 			setDeleteId(null)
-			router.refresh()
 		}
 	}
 

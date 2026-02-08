@@ -33,7 +33,7 @@ const clientNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 	{ label: 'My Bookings', href: '/dashboard/bookings', icon: Calendar },
 	{ label: 'Favorites', href: '/dashboard/favorites', icon: Heart },
-	{ label: 'Discover', href: '/', icon: Search },
+	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
 
 const businessNav: NavItem[] = [
