@@ -92,7 +92,7 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 	return (
 		<TooltipProvider>
 			<motion.aside
-				className="relative hidden md:flex h-svh flex-col border-r bg-sidebar overflow-visible"
+				className="relative hidden md:flex h-svh sticky top-0 flex-col border-r bg-sidebar overflow-visible"
 				animate={{ width: effectiveCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
 				transition={hasInteracted ? { duration: 0.2, ease: 'easeInOut' } : { duration: 0 }}
 				style={{ flexShrink: 0 }}
