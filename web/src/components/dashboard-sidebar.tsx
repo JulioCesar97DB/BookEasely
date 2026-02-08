@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface NavItem {
 	label: string
@@ -65,10 +65,13 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 	const pathname = usePathname()
 	const nav = role === 'business_owner' ? businessNav : isWorker ? workerNav : clientNav
 
-	const [collapsed, setCollapsed] = useState(() => {
-		if (typeof window === 'undefined') return false
-		return localStorage.getItem('sidebar-collapsed') === 'true'
-	})
+	const [collapsed, setCollapsed] = useState(false)
+	const [mounted, setMounted] = useState(false)
+
+	useEffect(() => {
+		setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true')
+		setMounted(true)
+	}, [])
 
 	function toggleCollapsed() {
 		setCollapsed((prev) => {
@@ -83,7 +86,7 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 			<motion.aside
 				className="relative flex h-svh flex-col border-r bg-sidebar overflow-visible"
 				animate={{ width: collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
-				transition={{ duration: 0.2, ease: 'easeInOut' }}
+				transition={mounted ? { duration: 0.2, ease: 'easeInOut' } : { duration: 0 }}
 				style={{ flexShrink: 0 }}
 			>
 				{/* Collapse toggle — sits on the right border */}
