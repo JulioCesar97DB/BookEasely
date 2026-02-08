@@ -5,7 +5,7 @@ import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carouse
 import { cn } from '@/lib/utils'
 import { Search } from 'lucide-react'
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface Props {
 	images: string[]
@@ -24,17 +24,12 @@ export function BusinessImageCarousel({
 }: Props) {
 	const [api, setApi] = useState<CarouselApi>()
 	const [current, setCurrent] = useState(0)
-	const currentRef = useRef(current)
-	currentRef.current = current
 
 	useEffect(() => {
 		if (!api) return
 
 		const onSelect = () => {
-			const snap = api.selectedScrollSnap()
-			if (snap !== currentRef.current) {
-				setCurrent(snap)
-			}
+			setCurrent(api.selectedScrollSnap())
 		}
 
 		api.on('select', onSelect)
