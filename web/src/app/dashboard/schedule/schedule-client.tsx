@@ -171,8 +171,6 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 
 								{/* Time rows */}
 								{HOURS.map((hour) => {
-									const rowTop = (hour * 60 - gridStart) / (gridEnd - gridStart)
-
 									return (
 										<div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b last:border-b-0 h-12">
 											<div className="p-1 text-right pr-2 flex items-start justify-end">
@@ -197,7 +195,7 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 														key={dayIndex}
 														className={cn(
 															'border-l relative',
-															isToday && 'bg-primary/[0.02]',
+															isToday && 'bg-primary/2',
 															isInBizHours ? 'bg-muted/30' : ''
 														)}
 													>
