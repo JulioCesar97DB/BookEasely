@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface NavItem {
 	label: string
@@ -65,12 +65,10 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 	const pathname = usePathname()
 	const nav = role === 'business_owner' ? businessNav : isWorker ? workerNav : clientNav
 
-	const [collapsed, setCollapsed] = useState(false)
-
-	useEffect(() => {
-		const stored = localStorage.getItem('sidebar-collapsed')
-		if (stored === 'true') setCollapsed(true)
-	}, [])
+	const [collapsed, setCollapsed] = useState(() => {
+		if (typeof window === 'undefined') return false
+		return localStorage.getItem('sidebar-collapsed') === 'true'
+	})
 
 	function toggleCollapsed() {
 		setCollapsed((prev) => {
