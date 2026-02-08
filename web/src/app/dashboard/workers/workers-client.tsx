@@ -1,5 +1,6 @@
 'use client'
 
+import { PageTransition } from '@/components/page-transition'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -193,349 +194,351 @@ export function WorkersClient({
 	}
 
 	return (
-		<div>
-			<div className="mb-8 flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">Team</h1>
-					<p className="text-muted-foreground">Manage your workers and their availability.</p>
-				</div>
-				<div className="flex gap-2">
-					{!ownerIsWorker && (
-						<Button variant="outline" onClick={openAddSelf} className="gap-2">
-							<UserPlus className="h-4 w-4" />
-							Add Yourself
-						</Button>
-					)}
-					<Button onClick={openInvite} className="gap-2">
-						<Mail className="h-4 w-4" />
-						Invite Worker
-					</Button>
-				</div>
-			</div>
-
-			{workers.length === 0 && pendingInvitations.length === 0 ? (
-				<motion.div
-					initial={{ opacity: 0, y: 16 }}
-					animate={{ opacity: 1, y: 0 }}
-					className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center"
-				>
-					<div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-						<Users className="h-7 w-7" />
+		<PageTransition>
+			<div>
+				<div className="mb-8 flex items-center justify-between">
+					<div>
+						<h1 className="text-2xl font-bold tracking-tight">Team</h1>
+						<p className="text-muted-foreground">Manage your workers and their availability.</p>
 					</div>
-					<h3 className="mt-4 text-lg font-semibold">No team members yet</h3>
-					<p className="mt-1 max-w-sm text-sm text-muted-foreground">
-						Add yourself as a worker or invite team members by email.
-					</p>
-					<div className="mt-6 flex gap-3">
-						<Button variant="outline" onClick={openAddSelf} className="gap-2">
-							<UserPlus className="h-4 w-4" />
-							Add Yourself
-						</Button>
+					<div className="flex gap-2">
+						{!ownerIsWorker && (
+							<Button variant="outline" onClick={openAddSelf} className="gap-2">
+								<UserPlus className="h-4 w-4" />
+								Add Yourself
+							</Button>
+						)}
 						<Button onClick={openInvite} className="gap-2">
 							<Mail className="h-4 w-4" />
-							Invite by Email
+							Invite Worker
 						</Button>
 					</div>
-				</motion.div>
-			) : (
-				<>
-					{/* Workers Grid */}
-					<div className="grid gap-4 sm:grid-cols-2">
-						{workers.map((worker, index) => {
-							const workerAvail = availability.filter((a) => a.worker_id === worker.id)
-							const workerBlocked = blockedDates.filter((b) => b.worker_id === worker.id)
-							const workerServiceCount = serviceWorkers.filter((sw) => sw.worker_id === worker.id).length
-							const isExpanded = expandedWorker === worker.id
-							const nextBlockedDate = workerBlocked.find((b) => b.date >= new Date().toISOString().split('T')[0]!)
-							const availSummary = getAvailabilitySummary(workerAvail)
+				</div>
 
-							return (
-								<motion.div
-									key={worker.id}
-									initial={{ opacity: 0, y: 8 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: index * 0.05 }}
-								>
-									<Card className="transition-shadow hover:shadow-md">
-										<CardHeader className="pb-3">
-											<div className="flex items-start justify-between">
-												<div className="flex items-center gap-3">
-													<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
-														{worker.display_name.charAt(0).toUpperCase()}
+				{workers.length === 0 && pendingInvitations.length === 0 ? (
+					<motion.div
+						initial={{ opacity: 0, y: 16 }}
+						animate={{ opacity: 1, y: 0 }}
+						className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center"
+					>
+						<div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+							<Users className="h-7 w-7" />
+						</div>
+						<h3 className="mt-4 text-lg font-semibold">No team members yet</h3>
+						<p className="mt-1 max-w-sm text-sm text-muted-foreground">
+							Add yourself as a worker or invite team members by email.
+						</p>
+						<div className="mt-6 flex gap-3">
+							<Button variant="outline" onClick={openAddSelf} className="gap-2">
+								<UserPlus className="h-4 w-4" />
+								Add Yourself
+							</Button>
+							<Button onClick={openInvite} className="gap-2">
+								<Mail className="h-4 w-4" />
+								Invite by Email
+							</Button>
+						</div>
+					</motion.div>
+				) : (
+					<>
+						{/* Workers Grid */}
+						<div className="grid gap-4 sm:grid-cols-2">
+							{workers.map((worker, index) => {
+								const workerAvail = availability.filter((a) => a.worker_id === worker.id)
+								const workerBlocked = blockedDates.filter((b) => b.worker_id === worker.id)
+								const workerServiceCount = serviceWorkers.filter((sw) => sw.worker_id === worker.id).length
+								const isExpanded = expandedWorker === worker.id
+								const nextBlockedDate = workerBlocked.find((b) => b.date >= new Date().toISOString().split('T')[0]!)
+								const availSummary = getAvailabilitySummary(workerAvail)
+
+								return (
+									<motion.div
+										key={worker.id}
+										initial={{ opacity: 0, y: 8 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ delay: index * 0.05 }}
+									>
+										<Card className="transition-shadow hover:shadow-md">
+											<CardHeader className="pb-3">
+												<div className="flex items-start justify-between">
+													<div className="flex items-center gap-3">
+														<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+															{worker.display_name.charAt(0).toUpperCase()}
+														</div>
+														<div>
+															<CardTitle className="text-base">{worker.display_name}</CardTitle>
+															{worker.bio && (
+																<p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
+																	{worker.bio}
+																</p>
+															)}
+														</div>
 													</div>
-													<div>
-														<CardTitle className="text-base">{worker.display_name}</CardTitle>
-														{worker.bio && (
-															<p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-																{worker.bio}
-															</p>
-														)}
-													</div>
+													<Badge variant={worker.is_active ? 'default' : 'secondary'}>
+														{worker.is_active ? 'Active' : 'Inactive'}
+													</Badge>
 												</div>
-												<Badge variant={worker.is_active ? 'default' : 'secondary'}>
-													{worker.is_active ? 'Active' : 'Inactive'}
-												</Badge>
-											</div>
-										</CardHeader>
-										<CardContent>
-											{/* Stats */}
-											<div className="flex flex-wrap gap-3 mb-3 text-xs text-muted-foreground">
-												<span className="inline-flex items-center gap-1">
-													<ClipboardList className="h-3 w-3" />
-													{workerServiceCount} service{workerServiceCount !== 1 ? 's' : ''}
-												</span>
-												<span className="inline-flex items-center gap-1">
-													<Clock className="h-3 w-3" />
-													{availSummary}
-												</span>
-												{nextBlockedDate && (
-													<span className="inline-flex items-center gap-1 text-amber-600">
-														<CalendarOff className="h-3 w-3" />
-														Off {new Date(nextBlockedDate.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+											</CardHeader>
+											<CardContent>
+												{/* Stats */}
+												<div className="flex flex-wrap gap-3 mb-3 text-xs text-muted-foreground">
+													<span className="inline-flex items-center gap-1">
+														<ClipboardList className="h-3 w-3" />
+														{workerServiceCount} service{workerServiceCount !== 1 ? 's' : ''}
 													</span>
-												)}
-											</div>
-
-											{/* Specialties */}
-											{worker.specialties && worker.specialties.length > 0 && (
-												<div className="flex flex-wrap gap-1.5 mb-3">
-													{worker.specialties.map((spec) => (
-														<Badge key={spec} variant="outline" className="text-xs">
-															{spec}
-														</Badge>
-													))}
+													<span className="inline-flex items-center gap-1">
+														<Clock className="h-3 w-3" />
+														{availSummary}
+													</span>
+													{nextBlockedDate && (
+														<span className="inline-flex items-center gap-1 text-amber-600">
+															<CalendarOff className="h-3 w-3" />
+															Off {new Date(nextBlockedDate.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+														</span>
+													)}
 												</div>
-											)}
 
-											{/* Member since */}
-											<p className="text-[11px] text-muted-foreground/60 mb-3">
-												Member since {new Date(worker.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-											</p>
+												{/* Specialties */}
+												{worker.specialties && worker.specialties.length > 0 && (
+													<div className="flex flex-wrap gap-1.5 mb-3">
+														{worker.specialties.map((spec) => (
+															<Badge key={spec} variant="outline" className="text-xs">
+																{spec}
+															</Badge>
+														))}
+													</div>
+												)}
 
-											<div className="flex gap-2">
-												<Button
-													variant="outline"
-													size="sm"
-													onClick={() => openEdit(worker)}
-												>
-													Edit
-												</Button>
+												{/* Member since */}
+												<p className="text-[11px] text-muted-foreground/60 mb-3">
+													Member since {new Date(worker.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+												</p>
+
+												<div className="flex gap-2">
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={() => openEdit(worker)}
+													>
+														Edit
+													</Button>
+													<Button
+														variant="ghost"
+														size="sm"
+														onClick={() =>
+															setExpandedWorker(isExpanded ? null : worker.id)
+														}
+														className="gap-1"
+													>
+														{isExpanded ? (
+															<>
+																<ChevronUp className="h-4 w-4" />
+																Less
+															</>
+														) : (
+															<>
+																<ChevronDown className="h-4 w-4" />
+																Schedule
+															</>
+														)}
+													</Button>
+												</div>
+
+												{isExpanded && (
+													<motion.div
+														initial={{ height: 0, opacity: 0 }}
+														animate={{ height: 'auto', opacity: 1 }}
+														exit={{ height: 0, opacity: 0 }}
+														transition={{ duration: 0.2 }}
+														className="mt-4 space-y-4 border-t pt-4"
+													>
+														<AvailabilitySection
+															workerId={worker.id}
+															availability={workerAvail}
+														/>
+														<BlockedDatesSection
+															workerId={worker.id}
+															blockedDates={workerBlocked}
+														/>
+													</motion.div>
+												)}
+											</CardContent>
+										</Card>
+									</motion.div>
+								)
+							})}
+						</div>
+
+						{/* Pending Invitations */}
+						{pendingInvitations.length > 0 && (
+							<div className="mt-8">
+								<h2 className="text-lg font-semibold mb-4">Pending Invitations</h2>
+								<div className="space-y-2">
+									{pendingInvitations.map((inv) => (
+										<div
+											key={inv.id}
+											className="flex items-center justify-between rounded-lg border px-4 py-3"
+										>
+											<div className="flex items-center gap-3">
+												<div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+													<Mail className="h-4 w-4" />
+												</div>
+												<div>
+													<p className="text-sm font-medium">{inv.display_name}</p>
+													<p className="text-xs text-muted-foreground">{inv.email}</p>
+												</div>
+											</div>
+											<div className="flex items-center gap-3">
+												<Badge variant="outline" className="text-amber-600 border-amber-300">
+													Pending
+												</Badge>
 												<Button
 													variant="ghost"
-													size="sm"
-													onClick={() =>
-														setExpandedWorker(isExpanded ? null : worker.id)
-													}
-													className="gap-1"
+													size="icon"
+													className="h-7 w-7 text-muted-foreground hover:text-destructive"
+													onClick={() => handleCancelInvitation(inv.id)}
 												>
-													{isExpanded ? (
-														<>
-															<ChevronUp className="h-4 w-4" />
-															Less
-														</>
-													) : (
-														<>
-															<ChevronDown className="h-4 w-4" />
-															Schedule
-														</>
-													)}
+													<X className="h-4 w-4" />
 												</Button>
 											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+					</>
+				)}
 
-											{isExpanded && (
-												<motion.div
-													initial={{ height: 0, opacity: 0 }}
-													animate={{ height: 'auto', opacity: 1 }}
-													exit={{ height: 0, opacity: 0 }}
-													transition={{ duration: 0.2 }}
-													className="mt-4 space-y-4 border-t pt-4"
-												>
-													<AvailabilitySection
-														workerId={worker.id}
-														availability={workerAvail}
-													/>
-													<BlockedDatesSection
-														workerId={worker.id}
-														blockedDates={workerBlocked}
-													/>
-												</motion.div>
-											)}
-										</CardContent>
-									</Card>
-								</motion.div>
-							)
-						})}
-					</div>
+				{/* Edit Worker Sheet */}
+				<Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
+					<SheetContent className="overflow-y-auto">
+						<SheetHeader>
+							<SheetTitle>{editingWorker ? 'Edit Worker' : 'Add Yourself'}</SheetTitle>
+							<SheetDescription>
+								{editingWorker
+									? 'Update worker details.'
+									: 'Add yourself as a team member.'}
+							</SheetDescription>
+						</SheetHeader>
 
-					{/* Pending Invitations */}
-					{pendingInvitations.length > 0 && (
-						<div className="mt-8">
-							<h2 className="text-lg font-semibold mb-4">Pending Invitations</h2>
+						<div className="mt-6 space-y-6">
 							<div className="space-y-2">
-								{pendingInvitations.map((inv) => (
-									<div
-										key={inv.id}
-										className="flex items-center justify-between rounded-lg border px-4 py-3"
-									>
-										<div className="flex items-center gap-3">
-											<div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-												<Mail className="h-4 w-4" />
-											</div>
-											<div>
-												<p className="text-sm font-medium">{inv.display_name}</p>
-												<p className="text-xs text-muted-foreground">{inv.email}</p>
-											</div>
-										</div>
-										<div className="flex items-center gap-3">
-											<Badge variant="outline" className="text-amber-600 border-amber-300">
-												Pending
-											</Badge>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-muted-foreground hover:text-destructive"
-												onClick={() => handleCancelInvitation(inv.id)}
-											>
-												<X className="h-4 w-4" />
-											</Button>
-										</div>
-									</div>
-								))}
+								<Label>Display name</Label>
+								<Input
+									value={form.display_name}
+									onChange={(e) => setForm((p) => ({ ...p, display_name: e.target.value }))}
+									placeholder="John Doe"
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label>Bio</Label>
+								<Textarea
+									value={form.bio}
+									onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
+									placeholder="Brief description..."
+									className="min-h-20 resize-none"
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label>Specialties</Label>
+								<Input
+									value={form.specialties}
+									onChange={(e) => setForm((p) => ({ ...p, specialties: e.target.value }))}
+									placeholder="Haircuts, Coloring, Styling"
+								/>
+								<p className="text-xs text-muted-foreground">Separate with commas</p>
+							</div>
+
+							<div className="flex items-center justify-between rounded-lg border p-4">
+								<div>
+									<p className="text-sm font-medium">Active</p>
+									<p className="text-xs text-muted-foreground">Available for bookings</p>
+								</div>
+								<Switch
+									checked={form.is_active}
+									onCheckedChange={(checked) => setForm((p) => ({ ...p, is_active: checked }))}
+								/>
+							</div>
+
+							<div className="flex gap-3 pt-4">
+								<Button variant="outline" className="flex-1" onClick={() => setEditSheetOpen(false)}>
+									Cancel
+								</Button>
+								<Button className="flex-1" onClick={handleSave} disabled={saving}>
+									{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+									{editingWorker ? 'Update' : 'Add Yourself'}
+								</Button>
 							</div>
 						</div>
-					)}
-				</>
-			)}
+					</SheetContent>
+				</Sheet>
 
-			{/* Edit Worker Sheet */}
-			<Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
-				<SheetContent className="overflow-y-auto">
-					<SheetHeader>
-						<SheetTitle>{editingWorker ? 'Edit Worker' : 'Add Yourself'}</SheetTitle>
-						<SheetDescription>
-							{editingWorker
-								? 'Update worker details.'
-								: 'Add yourself as a team member.'}
-						</SheetDescription>
-					</SheetHeader>
+				{/* Invite Worker Sheet */}
+				<Sheet open={inviteSheetOpen} onOpenChange={setInviteSheetOpen}>
+					<SheetContent className="overflow-y-auto">
+						<SheetHeader>
+							<SheetTitle>Invite Worker</SheetTitle>
+							<SheetDescription>
+								Invite a team member by email. If they already have an account, they&apos;ll be added instantly. Otherwise, they&apos;ll be linked when they sign up.
+							</SheetDescription>
+						</SheetHeader>
 
-					<div className="mt-6 space-y-6">
-						<div className="space-y-2">
-							<Label>Display name</Label>
-							<Input
-								value={form.display_name}
-								onChange={(e) => setForm((p) => ({ ...p, display_name: e.target.value }))}
-								placeholder="John Doe"
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label>Bio</Label>
-							<Textarea
-								value={form.bio}
-								onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
-								placeholder="Brief description..."
-								className="min-h-20 resize-none"
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label>Specialties</Label>
-							<Input
-								value={form.specialties}
-								onChange={(e) => setForm((p) => ({ ...p, specialties: e.target.value }))}
-								placeholder="Haircuts, Coloring, Styling"
-							/>
-							<p className="text-xs text-muted-foreground">Separate with commas</p>
-						</div>
-
-						<div className="flex items-center justify-between rounded-lg border p-4">
-							<div>
-								<p className="text-sm font-medium">Active</p>
-								<p className="text-xs text-muted-foreground">Available for bookings</p>
+						<div className="mt-6 space-y-6">
+							<div className="space-y-2">
+								<Label>Email</Label>
+								<Input
+									type="email"
+									value={inviteForm.email}
+									onChange={(e) => setInviteForm((p) => ({ ...p, email: e.target.value }))}
+									placeholder="worker@example.com"
+								/>
 							</div>
-							<Switch
-								checked={form.is_active}
-								onCheckedChange={(checked) => setForm((p) => ({ ...p, is_active: checked }))}
-							/>
-						</div>
 
-						<div className="flex gap-3 pt-4">
-							<Button variant="outline" className="flex-1" onClick={() => setEditSheetOpen(false)}>
-								Cancel
-							</Button>
-							<Button className="flex-1" onClick={handleSave} disabled={saving}>
-								{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								{editingWorker ? 'Update' : 'Add Yourself'}
-							</Button>
-						</div>
-					</div>
-				</SheetContent>
-			</Sheet>
+							<div className="space-y-2">
+								<Label>Display name</Label>
+								<Input
+									value={inviteForm.display_name}
+									onChange={(e) => setInviteForm((p) => ({ ...p, display_name: e.target.value }))}
+									placeholder="John Doe"
+								/>
+							</div>
 
-			{/* Invite Worker Sheet */}
-			<Sheet open={inviteSheetOpen} onOpenChange={setInviteSheetOpen}>
-				<SheetContent className="overflow-y-auto">
-					<SheetHeader>
-						<SheetTitle>Invite Worker</SheetTitle>
-						<SheetDescription>
-							Invite a team member by email. If they already have an account, they&apos;ll be added instantly. Otherwise, they&apos;ll be linked when they sign up.
-						</SheetDescription>
-					</SheetHeader>
+							<div className="space-y-2">
+								<Label>Bio</Label>
+								<Textarea
+									value={inviteForm.bio}
+									onChange={(e) => setInviteForm((p) => ({ ...p, bio: e.target.value }))}
+									placeholder="Brief description..."
+									className="min-h-20 resize-none"
+								/>
+							</div>
 
-					<div className="mt-6 space-y-6">
-						<div className="space-y-2">
-							<Label>Email</Label>
-							<Input
-								type="email"
-								value={inviteForm.email}
-								onChange={(e) => setInviteForm((p) => ({ ...p, email: e.target.value }))}
-								placeholder="worker@example.com"
-							/>
-						</div>
+							<div className="space-y-2">
+								<Label>Specialties</Label>
+								<Input
+									value={inviteForm.specialties}
+									onChange={(e) => setInviteForm((p) => ({ ...p, specialties: e.target.value }))}
+									placeholder="Haircuts, Coloring, Styling"
+								/>
+								<p className="text-xs text-muted-foreground">Separate with commas</p>
+							</div>
 
-						<div className="space-y-2">
-							<Label>Display name</Label>
-							<Input
-								value={inviteForm.display_name}
-								onChange={(e) => setInviteForm((p) => ({ ...p, display_name: e.target.value }))}
-								placeholder="John Doe"
-							/>
+							<div className="flex gap-3 pt-4">
+								<Button variant="outline" className="flex-1" onClick={() => setInviteSheetOpen(false)}>
+									Cancel
+								</Button>
+								<Button className="flex-1" onClick={handleInvite} disabled={saving}>
+									{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+									Send Invitation
+								</Button>
+							</div>
 						</div>
-
-						<div className="space-y-2">
-							<Label>Bio</Label>
-							<Textarea
-								value={inviteForm.bio}
-								onChange={(e) => setInviteForm((p) => ({ ...p, bio: e.target.value }))}
-								placeholder="Brief description..."
-								className="min-h-20 resize-none"
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label>Specialties</Label>
-							<Input
-								value={inviteForm.specialties}
-								onChange={(e) => setInviteForm((p) => ({ ...p, specialties: e.target.value }))}
-								placeholder="Haircuts, Coloring, Styling"
-							/>
-							<p className="text-xs text-muted-foreground">Separate with commas</p>
-						</div>
-
-						<div className="flex gap-3 pt-4">
-							<Button variant="outline" className="flex-1" onClick={() => setInviteSheetOpen(false)}>
-								Cancel
-							</Button>
-							<Button className="flex-1" onClick={handleInvite} disabled={saving}>
-								{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Send Invitation
-							</Button>
-						</div>
-					</div>
-				</SheetContent>
-			</Sheet>
-		</div>
+					</SheetContent>
+				</Sheet>
+			</div>
+		</PageTransition>
 	)
 }
 

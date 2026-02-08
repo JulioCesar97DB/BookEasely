@@ -1,3 +1,4 @@
+import { PageTransition } from '@/components/page-transition'
 import { createClient } from '@/lib/supabase/server'
 import type { UserRole } from '@/lib/types'
 import { redirect } from 'next/navigation'
@@ -34,10 +35,12 @@ export default async function ProfilePage() {
 	}
 
 	return (
-		<ProfileClient
-			profile={profile}
-			role={role}
-			businessName={businessName}
-		/>
+		<PageTransition>
+			<ProfileClient
+				profile={profile}
+				role={role}
+				businessName={businessName}
+			/>
+		</PageTransition>
 	)
 }

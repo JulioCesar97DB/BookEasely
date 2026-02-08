@@ -1,5 +1,6 @@
 'use client'
 
+import { PageTransition } from '@/components/page-transition'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -155,249 +156,251 @@ export function ServicesClient({ businessId, services, workers, serviceWorkers }
 	}
 
 	return (
-		<div>
-			<div className="mb-8 flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">Services</h1>
-					<p className="text-muted-foreground">Manage the services your business offers.</p>
-				</div>
-				<Button onClick={openAdd} className="gap-2">
-					<Plus className="h-4 w-4" />
-					Add Service
-				</Button>
-			</div>
-
-			{services.length === 0 ? (
-				<motion.div
-					initial={{ opacity: 0, y: 16 }}
-					animate={{ opacity: 1, y: 0 }}
-					className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center"
-				>
-					<div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-						<ClipboardList className="h-7 w-7" />
+		<PageTransition>
+			<div>
+				<div className="mb-8 flex items-center justify-between">
+					<div>
+						<h1 className="text-2xl font-bold tracking-tight">Services</h1>
+						<p className="text-muted-foreground">Manage the services your business offers.</p>
 					</div>
-					<h3 className="mt-4 text-lg font-semibold">No services yet</h3>
-					<p className="mt-1 text-sm text-muted-foreground">
-						Add your first service to start accepting bookings.
-					</p>
-					<Button onClick={openAdd} className="mt-6 gap-2">
+					<Button onClick={openAdd} className="gap-2">
 						<Plus className="h-4 w-4" />
-						Add your first service
+						Add Service
 					</Button>
-				</motion.div>
-			) : (
-				<div className="rounded-xl border">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Name</TableHead>
-								<TableHead>Price</TableHead>
-								<TableHead>Duration</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead className="w-24">Actions</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{services.map((service, index) => (
-								<motion.tr
-									key={service.id}
-									initial={{ opacity: 0 }}
-									animate={{ opacity: 1 }}
-									transition={{ delay: index * 0.05 }}
-									className="border-b transition-colors hover:bg-muted/50"
-								>
-									<TableCell>
-										<div>
-											<p className="font-medium">{service.name}</p>
-											{service.description && (
-												<p className="text-sm text-muted-foreground line-clamp-1">
-													{service.description}
-												</p>
-											)}
-										</div>
-									</TableCell>
-									<TableCell className="font-medium">
-										${service.price.toFixed(2)}
-									</TableCell>
-									<TableCell>{service.duration_minutes} min</TableCell>
-									<TableCell>
-										<Badge variant={service.is_active ? 'default' : 'secondary'}>
-											{service.is_active ? 'Active' : 'Inactive'}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<div className="flex items-center gap-1">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-8 w-8"
-												onClick={() => openEdit(service)}
-											>
-												<Pencil className="h-4 w-4" />
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-8 w-8 text-destructive hover:text-destructive"
-												onClick={() => setDeleteId(service.id)}
-											>
-												<Trash2 className="h-4 w-4" />
-											</Button>
-										</div>
-									</TableCell>
-								</motion.tr>
-							))}
-						</TableBody>
-					</Table>
 				</div>
-			)}
 
-			{/* Add/Edit Sheet */}
-			<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-				<SheetContent className="overflow-y-auto">
-					<SheetHeader>
-						<SheetTitle>{editingService ? 'Edit Service' : 'Add Service'}</SheetTitle>
-						<SheetDescription>
-							{editingService
-								? 'Update the details of this service.'
-								: 'Fill in the details for your new service.'}
-						</SheetDescription>
-					</SheetHeader>
-
-					<div className="mt-6 space-y-6">
-						<div className="space-y-2">
-							<Label>Service name</Label>
-							<Input
-								value={form.name}
-								onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-								placeholder="Haircut"
-							/>
+				{services.length === 0 ? (
+					<motion.div
+						initial={{ opacity: 0, y: 16 }}
+						animate={{ opacity: 1, y: 0 }}
+						className="flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center"
+					>
+						<div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+							<ClipboardList className="h-7 w-7" />
 						</div>
+						<h3 className="mt-4 text-lg font-semibold">No services yet</h3>
+						<p className="mt-1 text-sm text-muted-foreground">
+							Add your first service to start accepting bookings.
+						</p>
+						<Button onClick={openAdd} className="mt-6 gap-2">
+							<Plus className="h-4 w-4" />
+							Add your first service
+						</Button>
+					</motion.div>
+				) : (
+					<div className="rounded-xl border">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Name</TableHead>
+									<TableHead>Price</TableHead>
+									<TableHead>Duration</TableHead>
+									<TableHead>Status</TableHead>
+									<TableHead className="w-24">Actions</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{services.map((service, index) => (
+									<motion.tr
+										key={service.id}
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={{ delay: index * 0.05 }}
+										className="border-b transition-colors hover:bg-muted/50"
+									>
+										<TableCell>
+											<div>
+												<p className="font-medium">{service.name}</p>
+												{service.description && (
+													<p className="text-sm text-muted-foreground line-clamp-1">
+														{service.description}
+													</p>
+												)}
+											</div>
+										</TableCell>
+										<TableCell className="font-medium">
+											${service.price.toFixed(2)}
+										</TableCell>
+										<TableCell>{service.duration_minutes} min</TableCell>
+										<TableCell>
+											<Badge variant={service.is_active ? 'default' : 'secondary'}>
+												{service.is_active ? 'Active' : 'Inactive'}
+											</Badge>
+										</TableCell>
+										<TableCell>
+											<div className="flex items-center gap-1">
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8"
+													onClick={() => openEdit(service)}
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8 text-destructive hover:text-destructive"
+													onClick={() => setDeleteId(service.id)}
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
+											</div>
+										</TableCell>
+									</motion.tr>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				)}
 
-						<div className="space-y-2">
-							<Label>Description</Label>
-							<Textarea
-								value={form.description}
-								onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-								placeholder="Describe this service..."
-								className="min-h-20 resize-none"
-							/>
-						</div>
+				{/* Add/Edit Sheet */}
+				<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+					<SheetContent className="overflow-y-auto">
+						<SheetHeader>
+							<SheetTitle>{editingService ? 'Edit Service' : 'Add Service'}</SheetTitle>
+							<SheetDescription>
+								{editingService
+									? 'Update the details of this service.'
+									: 'Fill in the details for your new service.'}
+							</SheetDescription>
+						</SheetHeader>
 
-						<div className="grid grid-cols-2 gap-4">
+						<div className="mt-6 space-y-6">
 							<div className="space-y-2">
-								<Label>Price ($)</Label>
+								<Label>Service name</Label>
 								<Input
-									type="number"
-									step="0.01"
-									min="0.01"
-									value={form.price}
-									onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
-									placeholder="25.00"
+									value={form.name}
+									onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+									placeholder="Haircut"
 								/>
 							</div>
 
 							<div className="space-y-2">
-								<Label>Duration</Label>
-								<Select
-									value={form.duration_minutes.toString()}
-									onValueChange={(v) => setForm((p) => ({ ...p, duration_minutes: parseInt(v) }))}
-								>
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										{DURATIONS.map((d) => (
-											<SelectItem key={d.value} value={d.value.toString()}>
-												{d.label}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+								<Label>Description</Label>
+								<Textarea
+									value={form.description}
+									onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+									placeholder="Describe this service..."
+									className="min-h-20 resize-none"
+								/>
 							</div>
-						</div>
 
-						<div className="flex items-center justify-between rounded-lg border p-4">
-							<div>
-								<p className="text-sm font-medium">Active</p>
-								<p className="text-xs text-muted-foreground">
-									Visible to clients for booking
-								</p>
-							</div>
-							<Switch
-								checked={form.is_active}
-								onCheckedChange={(checked) => setForm((p) => ({ ...p, is_active: checked }))}
-							/>
-						</div>
-
-						{workers.length > 0 && (
-							<div className="space-y-3">
-								<Label>Assign workers</Label>
-								<p className="text-xs text-muted-foreground">
-									Select which team members can perform this service.
-								</p>
+							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
-									{workers.map((worker) => (
-										<label
-											key={worker.id}
-											className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent/50"
-										>
-											<input
-												type="checkbox"
-												checked={form.worker_ids.includes(worker.id)}
-												onChange={() => toggleWorker(worker.id)}
-												className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-											/>
-											<span className="text-sm font-medium">{worker.display_name}</span>
-										</label>
-									))}
+									<Label>Price ($)</Label>
+									<Input
+										type="number"
+										step="0.01"
+										min="0.01"
+										value={form.price}
+										onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+										placeholder="25.00"
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<Label>Duration</Label>
+									<Select
+										value={form.duration_minutes.toString()}
+										onValueChange={(v) => setForm((p) => ({ ...p, duration_minutes: parseInt(v) }))}
+									>
+										<SelectTrigger>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{DURATIONS.map((d) => (
+												<SelectItem key={d.value} value={d.value.toString()}>
+													{d.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								</div>
 							</div>
-						)}
 
-						<div className="flex gap-3 pt-4">
-							<Button
-								variant="outline"
-								className="flex-1"
-								onClick={() => setSheetOpen(false)}
-							>
-								Cancel
-							</Button>
-							<Button
-								className="flex-1"
-								onClick={handleSave}
-								disabled={saving}
-							>
-								{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								{editingService ? 'Update' : 'Create'}
-							</Button>
+							<div className="flex items-center justify-between rounded-lg border p-4">
+								<div>
+									<p className="text-sm font-medium">Active</p>
+									<p className="text-xs text-muted-foreground">
+										Visible to clients for booking
+									</p>
+								</div>
+								<Switch
+									checked={form.is_active}
+									onCheckedChange={(checked) => setForm((p) => ({ ...p, is_active: checked }))}
+								/>
+							</div>
+
+							{workers.length > 0 && (
+								<div className="space-y-3">
+									<Label>Assign workers</Label>
+									<p className="text-xs text-muted-foreground">
+										Select which team members can perform this service.
+									</p>
+									<div className="space-y-2">
+										{workers.map((worker) => (
+											<label
+												key={worker.id}
+												className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent/50"
+											>
+												<input
+													type="checkbox"
+													checked={form.worker_ids.includes(worker.id)}
+													onChange={() => toggleWorker(worker.id)}
+													className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+												/>
+												<span className="text-sm font-medium">{worker.display_name}</span>
+											</label>
+										))}
+									</div>
+								</div>
+							)}
+
+							<div className="flex gap-3 pt-4">
+								<Button
+									variant="outline"
+									className="flex-1"
+									onClick={() => setSheetOpen(false)}
+								>
+									Cancel
+								</Button>
+								<Button
+									className="flex-1"
+									onClick={handleSave}
+									disabled={saving}
+								>
+									{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+									{editingService ? 'Update' : 'Create'}
+								</Button>
+							</div>
 						</div>
-					</div>
-				</SheetContent>
-			</Sheet>
+					</SheetContent>
+				</Sheet>
 
-			{/* Delete Confirmation */}
-			<AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Delete service?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This will permanently remove this service. Existing bookings for this service will not be affected.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={handleDelete}
-							disabled={deleting}
-							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-						>
-							{deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-							Delete
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-		</div>
+				{/* Delete Confirmation */}
+				<AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Delete service?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This will permanently remove this service. Existing bookings for this service will not be affected.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={handleDelete}
+								disabled={deleting}
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							>
+								{deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+								Delete
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			</div>
+		</PageTransition>
 	)
 }

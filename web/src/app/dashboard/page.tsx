@@ -1,3 +1,5 @@
+import { AnimatedCard, AnimatedSection } from '@/components/animated-cards'
+import { PageTransition } from '@/components/page-transition'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
@@ -81,71 +83,83 @@ async function BusinessOwnerDashboard({ firstName, userId }: { firstName: string
 	])
 
 	return (
-		<div className="space-y-8">
-			<div>
-				<h1 className="text-3xl font-bold tracking-tight">
-					Welcome back, {firstName}
-				</h1>
-				<p className="mt-1 text-muted-foreground">
-					Here&apos;s an overview of your business
-				</p>
-			</div>
-
-			{/* Stats */}
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<StatCard
-					title="Today's Bookings"
-					value={String(todayBookings.count ?? 0)}
-					description={todayBookings.count === 0 ? 'No bookings today' : 'Scheduled today'}
-					icon={Calendar}
-				/>
-				<StatCard
-					title="Upcoming"
-					value={String(upcomingBookings.count ?? 0)}
-					description="Next 7 days"
-					icon={Clock}
-				/>
-				<StatCard
-					title="Rating"
-					value={business?.rating_count ? business.rating_avg.toFixed(1) : '--'}
-					description={business?.rating_count ? `${business.rating_count} review${business.rating_count !== 1 ? 's' : ''}` : 'No reviews yet'}
-					icon={Star}
-				/>
-				<StatCard
-					title="This Month"
-					value={String(monthBookings.count ?? 0)}
-					description="Total bookings"
-					icon={TrendingUp}
-				/>
-			</div>
-
-			{/* Quick Actions */}
-			<div>
-				<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-					<QuickAction href="/dashboard/services" icon={ClipboardList} label="Services" count={servicesCount.count ?? 0} countLabel="active" />
-					<QuickAction href="/dashboard/workers" icon={Users} label="Team" count={workersCount.count ?? 0} countLabel="active" />
-					<QuickAction href="/dashboard/schedule" icon={Clock} label="Schedule" />
-					<QuickAction href="/dashboard/business" icon={Store} label="Business Profile" />
+		<PageTransition>
+			<div className="space-y-8">
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">
+						Welcome back, {firstName}
+					</h1>
+					<p className="mt-1 text-muted-foreground">
+						Here&apos;s an overview of your business
+					</p>
 				</div>
-			</div>
 
-			{/* Recent Activity */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">Recent Activity</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="flex flex-col items-center justify-center py-12 text-center">
-						<Calendar className="h-12 w-12 text-muted-foreground/30" />
-						<p className="mt-4 text-sm font-medium text-muted-foreground">No recent activity</p>
-						<p className="mt-1 text-xs text-muted-foreground/70">
-							Bookings and updates will appear here
-						</p>
+				{/* Stats */}
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<AnimatedCard delay={0}>
+						<StatCard
+							title="Today's Bookings"
+							value={String(todayBookings.count ?? 0)}
+							description={todayBookings.count === 0 ? 'No bookings today' : 'Scheduled today'}
+							icon={Calendar}
+						/>
+					</AnimatedCard>
+					<AnimatedCard delay={0.05}>
+						<StatCard
+							title="Upcoming"
+							value={String(upcomingBookings.count ?? 0)}
+							description="Next 7 days"
+							icon={Clock}
+						/>
+					</AnimatedCard>
+					<AnimatedCard delay={0.1}>
+						<StatCard
+							title="Rating"
+							value={business?.rating_count ? business.rating_avg.toFixed(1) : '--'}
+							description={business?.rating_count ? `${business.rating_count} review${business.rating_count !== 1 ? 's' : ''}` : 'No reviews yet'}
+							icon={Star}
+						/>
+					</AnimatedCard>
+					<AnimatedCard delay={0.15}>
+						<StatCard
+							title="This Month"
+							value={String(monthBookings.count ?? 0)}
+							description="Total bookings"
+							icon={TrendingUp}
+						/>
+					</AnimatedCard>
+				</div>
+
+				{/* Quick Actions */}
+				<AnimatedSection delay={0.2}>
+					<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+						<QuickAction href="/dashboard/services" icon={ClipboardList} label="Services" count={servicesCount.count ?? 0} countLabel="active" />
+						<QuickAction href="/dashboard/workers" icon={Users} label="Team" count={workersCount.count ?? 0} countLabel="active" />
+						<QuickAction href="/dashboard/schedule" icon={Clock} label="Schedule" />
+						<QuickAction href="/dashboard/business" icon={Store} label="Business Profile" />
 					</div>
-				</CardContent>
-			</Card>
-		</div>
+				</AnimatedSection>
+
+				{/* Recent Activity */}
+				<AnimatedSection delay={0.3}>
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-lg">Recent Activity</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="flex flex-col items-center justify-center py-12 text-center">
+								<Calendar className="h-12 w-12 text-muted-foreground/30" />
+								<p className="mt-4 text-sm font-medium text-muted-foreground">No recent activity</p>
+								<p className="mt-1 text-xs text-muted-foreground/70">
+									Bookings and updates will appear here
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</AnimatedSection>
+			</div>
+		</PageTransition>
 	)
 }
 
@@ -173,89 +187,99 @@ async function WorkerDashboard({ firstName, userId }: { firstName: string; userI
 	])
 
 	return (
-		<div className="space-y-8">
-			<div>
-				<h1 className="text-3xl font-bold tracking-tight">
-					Welcome back, {firstName}
-				</h1>
-				<p className="mt-1 text-muted-foreground">
-					Here&apos;s your work overview
-				</p>
-			</div>
-
-			{/* Stats */}
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<StatCard
-					title="Today"
-					value={String(todayBookings.count ?? 0)}
-					description={todayBookings.count === 0 ? 'No appointments today' : 'Appointments today'}
-					icon={Calendar}
-				/>
-				<StatCard
-					title="Upcoming"
-					value={String(upcomingBookings.count ?? 0)}
-					description="Next 7 days"
-					icon={Clock}
-				/>
-				<StatCard
-					title="Businesses"
-					value={String(workerRecords?.length ?? 0)}
-					description="You work for"
-					icon={Briefcase}
-				/>
-			</div>
-
-			{/* Quick Actions */}
-			<div>
-				<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-					<QuickAction href="/dashboard/my-schedule" icon={Clock} label="My Schedule" />
-					<QuickAction href="/dashboard/bookings" icon={Calendar} label="My Bookings" />
-					<QuickAction href="/dashboard/discover" icon={Search} label="Discover Services" />
-				</div>
-			</div>
-
-			{/* Businesses */}
-			{workerRecords && workerRecords.length > 0 && (
+		<PageTransition>
+			<div className="space-y-8">
 				<div>
-					<h2 className="text-lg font-semibold mb-4">Your Workplaces</h2>
-					<div className="grid gap-3 sm:grid-cols-2">
-						{workerRecords.map((record) => {
-							const business = record.businesses as unknown as { name: string } | null
-							return (
-								<Card key={record.id}>
-									<CardContent className="flex items-center gap-4 py-4">
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-											<Store className="h-5 w-5 text-primary" />
-										</div>
-										<div className="flex-1 min-w-0">
-											<p className="font-medium truncate">{business?.name ?? 'Business'}</p>
-											<p className="text-sm text-muted-foreground truncate">as {record.display_name}</p>
-										</div>
-										<Badge variant="secondary">Worker</Badge>
-									</CardContent>
-								</Card>
-							)
-						})}
-					</div>
+					<h1 className="text-3xl font-bold tracking-tight">
+						Welcome back, {firstName}
+					</h1>
+					<p className="mt-1 text-muted-foreground">
+						Here&apos;s your work overview
+					</p>
 				</div>
-			)}
 
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">Recent Activity</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="flex flex-col items-center justify-center py-12 text-center">
-						<Calendar className="h-12 w-12 text-muted-foreground/30" />
-						<p className="mt-4 text-sm font-medium text-muted-foreground">No recent activity</p>
-						<p className="mt-1 text-xs text-muted-foreground/70">
-							Your work appointments and updates will appear here
-						</p>
+				{/* Stats */}
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<AnimatedCard delay={0}>
+						<StatCard
+							title="Today"
+							value={String(todayBookings.count ?? 0)}
+							description={todayBookings.count === 0 ? 'No appointments today' : 'Appointments today'}
+							icon={Calendar}
+						/>
+					</AnimatedCard>
+					<AnimatedCard delay={0.05}>
+						<StatCard
+							title="Upcoming"
+							value={String(upcomingBookings.count ?? 0)}
+							description="Next 7 days"
+							icon={Clock}
+						/>
+					</AnimatedCard>
+					<AnimatedCard delay={0.1}>
+						<StatCard
+							title="Businesses"
+							value={String(workerRecords?.length ?? 0)}
+							description="You work for"
+							icon={Briefcase}
+						/>
+					</AnimatedCard>
+				</div>
+
+				{/* Quick Actions */}
+				<AnimatedSection delay={0.15}>
+					<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						<QuickAction href="/dashboard/my-schedule" icon={Clock} label="My Schedule" />
+						<QuickAction href="/dashboard/bookings" icon={Calendar} label="My Bookings" />
+						<QuickAction href="/dashboard/discover" icon={Search} label="Discover Services" />
 					</div>
-				</CardContent>
-			</Card>
-		</div>
+				</AnimatedSection>
+
+				{/* Businesses */}
+				{workerRecords && workerRecords.length > 0 && (
+					<AnimatedSection delay={0.25}>
+						<h2 className="text-lg font-semibold mb-4">Your Workplaces</h2>
+						<div className="grid gap-3 sm:grid-cols-2">
+							{workerRecords.map((record) => {
+								const business = record.businesses as unknown as { name: string } | null
+								return (
+									<Card key={record.id}>
+										<CardContent className="flex items-center gap-4 py-4">
+											<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+												<Store className="h-5 w-5 text-primary" />
+											</div>
+											<div className="flex-1 min-w-0">
+												<p className="font-medium truncate">{business?.name ?? 'Business'}</p>
+												<p className="text-sm text-muted-foreground truncate">as {record.display_name}</p>
+											</div>
+											<Badge variant="secondary">Worker</Badge>
+										</CardContent>
+									</Card>
+								)
+							})}
+						</div>
+					</AnimatedSection>
+				)}
+
+				<AnimatedSection delay={0.35}>
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-lg">Recent Activity</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="flex flex-col items-center justify-center py-12 text-center">
+								<Calendar className="h-12 w-12 text-muted-foreground/30" />
+								<p className="mt-4 text-sm font-medium text-muted-foreground">No recent activity</p>
+								<p className="mt-1 text-xs text-muted-foreground/70">
+									Your work appointments and updates will appear here
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</AnimatedSection>
+			</div>
+		</PageTransition>
 	)
 }
 
@@ -271,62 +295,72 @@ async function ClientDashboard({ firstName, userId }: { firstName: string; userI
 	])
 
 	return (
-		<div className="space-y-8">
-			<div>
-				<h1 className="text-3xl font-bold tracking-tight">
-					Welcome back, {firstName}
-				</h1>
-				<p className="mt-1 text-muted-foreground">
-					Here&apos;s what&apos;s coming up
-				</p>
-			</div>
-
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<StatCard
-					title="Upcoming"
-					value={String(upcomingBookings.count ?? 0)}
-					description={upcomingBookings.count === 0 ? 'No upcoming bookings' : 'Scheduled'}
-					icon={Calendar}
-				/>
-				<StatCard
-					title="Completed"
-					value={String(completedBookings.count ?? 0)}
-					description="Total visits"
-					icon={Clock}
-				/>
-				<StatCard
-					title="Favorites"
-					value={String(favoritesCount.count ?? 0)}
-					description="Saved businesses"
-					icon={Heart}
-				/>
-			</div>
-
-			{/* Quick Actions */}
-			<div>
-				<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-					<QuickAction href="/dashboard/discover" icon={Search} label="Discover Services" />
-					<QuickAction href="/dashboard/bookings" icon={Calendar} label="My Bookings" />
-					<QuickAction href="/dashboard/favorites" icon={Heart} label="Favorites" />
+		<PageTransition>
+			<div className="space-y-8">
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">
+						Welcome back, {firstName}
+					</h1>
+					<p className="mt-1 text-muted-foreground">
+						Here&apos;s what&apos;s coming up
+					</p>
 				</div>
-			</div>
 
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">Recent Activity</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="flex flex-col items-center justify-center py-12 text-center">
-						<Calendar className="h-12 w-12 text-muted-foreground/30" />
-						<p className="mt-4 text-sm font-medium text-muted-foreground">No recent activity</p>
-						<p className="mt-1 text-xs text-muted-foreground/70">
-							Your bookings and reviews will appear here
-						</p>
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<AnimatedCard delay={0}>
+						<StatCard
+							title="Upcoming"
+							value={String(upcomingBookings.count ?? 0)}
+							description={upcomingBookings.count === 0 ? 'No upcoming bookings' : 'Scheduled'}
+							icon={Calendar}
+						/>
+					</AnimatedCard>
+					<AnimatedCard delay={0.05}>
+						<StatCard
+							title="Completed"
+							value={String(completedBookings.count ?? 0)}
+							description="Total visits"
+							icon={Clock}
+						/>
+					</AnimatedCard>
+					<AnimatedCard delay={0.1}>
+						<StatCard
+							title="Favorites"
+							value={String(favoritesCount.count ?? 0)}
+							description="Saved businesses"
+							icon={Heart}
+						/>
+					</AnimatedCard>
+				</div>
+
+				{/* Quick Actions */}
+				<AnimatedSection delay={0.15}>
+					<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						<QuickAction href="/dashboard/discover" icon={Search} label="Discover Services" />
+						<QuickAction href="/dashboard/bookings" icon={Calendar} label="My Bookings" />
+						<QuickAction href="/dashboard/favorites" icon={Heart} label="Favorites" />
 					</div>
-				</CardContent>
-			</Card>
-		</div>
+				</AnimatedSection>
+
+				<AnimatedSection delay={0.25}>
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-lg">Recent Activity</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="flex flex-col items-center justify-center py-12 text-center">
+								<Calendar className="h-12 w-12 text-muted-foreground/30" />
+								<p className="mt-4 text-sm font-medium text-muted-foreground">No recent activity</p>
+								<p className="mt-1 text-xs text-muted-foreground/70">
+									Your bookings and reviews will appear here
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</AnimatedSection>
+			</div>
+		</PageTransition>
 	)
 }
 

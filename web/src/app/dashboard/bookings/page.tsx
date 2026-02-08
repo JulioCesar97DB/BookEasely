@@ -1,3 +1,4 @@
+import { PageTransition } from '@/components/page-transition'
 import { Card, CardContent } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
 import { Calendar, Clock } from 'lucide-react'
@@ -68,74 +69,76 @@ export default async function BookingsPage() {
 	const today = new Date().toISOString().split('T')[0]!
 
 	return (
-		<div className="space-y-8">
-			<div>
-				<h1 className="text-3xl font-bold tracking-tight">Bookings</h1>
-				<p className="mt-1 text-muted-foreground">
-					Manage your upcoming and past appointments
-				</p>
-			</div>
+		<PageTransition>
+			<div className="space-y-8">
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">Bookings</h1>
+					<p className="mt-1 text-muted-foreground">
+						Manage your upcoming and past appointments
+					</p>
+				</div>
 
-			{/* Worker Bookings Section */}
-			{isWorker && (
+				{/* Worker Bookings Section */}
+				{isWorker && (
+					<div className="space-y-4">
+						<h2 className="text-lg font-semibold">Work Appointments</h2>
+						{workerBookings.length === 0 ? (
+							<Card>
+								<CardContent className="flex flex-col items-center justify-center py-12 text-center">
+									<Calendar className="h-10 w-10 text-muted-foreground/30" />
+									<p className="mt-3 text-sm font-medium text-muted-foreground">No work appointments yet</p>
+									<p className="mt-1 text-xs text-muted-foreground/70">
+										Appointments assigned to you will appear here
+									</p>
+								</CardContent>
+							</Card>
+						) : (
+							<div className="space-y-3">
+								{workerBookings.map((booking) => (
+									<BookingCard
+										key={booking.id}
+										booking={booking}
+										label={booking.profiles?.full_name ?? 'Client'}
+										sublabel={booking.services?.name ?? 'Service'}
+										isWorkerView
+										isPast={booking.date < today}
+									/>
+								))}
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Client Bookings Section */}
 				<div className="space-y-4">
-					<h2 className="text-lg font-semibold">Work Appointments</h2>
-					{workerBookings.length === 0 ? (
+					<h2 className="text-lg font-semibold">{isWorker ? 'Personal Bookings' : 'My Bookings'}</h2>
+					{clientBookings.length === 0 ? (
 						<Card>
 							<CardContent className="flex flex-col items-center justify-center py-12 text-center">
 								<Calendar className="h-10 w-10 text-muted-foreground/30" />
-								<p className="mt-3 text-sm font-medium text-muted-foreground">No work appointments yet</p>
+								<p className="mt-3 text-sm font-medium text-muted-foreground">No bookings yet</p>
 								<p className="mt-1 text-xs text-muted-foreground/70">
-									Appointments assigned to you will appear here
+									When you book an appointment, it will appear here
 								</p>
 							</CardContent>
 						</Card>
 					) : (
 						<div className="space-y-3">
-							{workerBookings.map((booking) => (
+							{clientBookings.map((booking) => (
 								<BookingCard
 									key={booking.id}
 									booking={booking}
-									label={booking.profiles?.full_name ?? 'Client'}
+									label={booking.businesses?.name ?? 'Business'}
 									sublabel={booking.services?.name ?? 'Service'}
-									isWorkerView
+									isWorkerView={false}
 									isPast={booking.date < today}
 								/>
 							))}
 						</div>
 					)}
 				</div>
-			)}
-
-			{/* Client Bookings Section */}
-			<div className="space-y-4">
-				<h2 className="text-lg font-semibold">{isWorker ? 'Personal Bookings' : 'My Bookings'}</h2>
-				{clientBookings.length === 0 ? (
-					<Card>
-						<CardContent className="flex flex-col items-center justify-center py-12 text-center">
-							<Calendar className="h-10 w-10 text-muted-foreground/30" />
-							<p className="mt-3 text-sm font-medium text-muted-foreground">No bookings yet</p>
-							<p className="mt-1 text-xs text-muted-foreground/70">
-								When you book an appointment, it will appear here
-							</p>
-						</CardContent>
-					</Card>
-				) : (
-					<div className="space-y-3">
-						{clientBookings.map((booking) => (
-							<BookingCard
-								key={booking.id}
-								booking={booking}
-								label={booking.businesses?.name ?? 'Business'}
-								sublabel={booking.services?.name ?? 'Service'}
-								isWorkerView={false}
-								isPast={booking.date < today}
-							/>
-						))}
-					</div>
-				)}
 			</div>
-		</div>
+		</PageTransition>
 	)
 }
 

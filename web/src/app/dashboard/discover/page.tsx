@@ -1,3 +1,4 @@
+import { PageTransition } from '@/components/page-transition';
 import { createClient } from '@/lib/supabase/server';
 import { DiscoverClient } from './discover-client';
 
@@ -32,11 +33,13 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
 	const { data: businesses } = await businessQuery
 
 	return (
-		<DiscoverClient
-			categories={categories ?? []}
-			initialBusinesses={businesses ?? []}
-			initialCategory={params.category ?? null}
-			initialQuery={params.q ?? ''}
-		/>
+		<PageTransition>
+			<DiscoverClient
+				categories={categories ?? []}
+				initialBusinesses={businesses ?? []}
+				initialCategory={params.category ?? null}
+				initialQuery={params.q ?? ''}
+			/>
+		</PageTransition>
 	)
 }

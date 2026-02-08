@@ -1,5 +1,6 @@
 'use client'
 
+import { PageTransition } from '@/components/page-transition'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -131,155 +132,157 @@ export function MyScheduleClient({ workers, availability, blockedDates }: Props)
 	}
 
 	return (
-		<div className="space-y-8">
-			<div>
-				<h1 className="text-2xl font-bold tracking-tight">My Schedule</h1>
-				<p className="text-muted-foreground">Manage your availability and time off.</p>
-			</div>
-
-			{/* Worker selector (if multiple businesses) */}
-			{workers.length > 1 && (
-				<div className="flex flex-wrap gap-2">
-					{workers.map((w, idx) => (
-						<button
-							key={w.id}
-							onClick={() => switchWorker(idx)}
-							className={cn(
-								'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
-								idx === selectedWorkerIdx
-									? 'bg-primary/10 border-primary/30 text-primary'
-									: 'bg-muted text-muted-foreground hover:bg-muted/80'
-							)}
-						>
-							{w.business_name}
-							{idx === selectedWorkerIdx && <Badge variant="secondary" className="text-xs">Active</Badge>}
-						</button>
-					))}
+		<PageTransition>
+			<div className="space-y-8">
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight">My Schedule</h1>
+					<p className="text-muted-foreground">Manage your availability and time off.</p>
 				</div>
-			)}
 
-			{workers.length === 1 && (
-				<p className="text-sm text-muted-foreground">
-					Schedule for <span className="font-medium text-foreground">{selectedWorker.business_name}</span>
-				</p>
-			)}
+				{/* Worker selector (if multiple businesses) */}
+				{workers.length > 1 && (
+					<div className="flex flex-wrap gap-2">
+						{workers.map((w, idx) => (
+							<button
+								key={w.id}
+								onClick={() => switchWorker(idx)}
+								className={cn(
+									'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+									idx === selectedWorkerIdx
+										? 'bg-primary/10 border-primary/30 text-primary'
+										: 'bg-muted text-muted-foreground hover:bg-muted/80'
+								)}
+							>
+								{w.business_name}
+								{idx === selectedWorkerIdx && <Badge variant="secondary" className="text-xs">Active</Badge>}
+							</button>
+						))}
+					</div>
+				)}
 
-			{/* Weekly Availability */}
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between">
-					<CardTitle className="text-lg">Weekly Availability</CardTitle>
-					<Button size="sm" onClick={handleSaveAvailability} disabled={savingAvail}>
-						{savingAvail ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-						Save
-					</Button>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					{avail.map((entry, idx) => (
-						<div
-							key={entry.day_of_week}
-							className={cn(
-								'flex items-center gap-4 rounded-lg border p-3 transition-colors',
-								entry.is_active ? 'bg-background' : 'bg-muted/50'
-							)}
-						>
-							<div className="w-28 shrink-0">
-								<p className="text-sm font-medium">{DAYS[idx]}</p>
-							</div>
-							<Switch
-								checked={entry.is_active}
-								onCheckedChange={(v) => updateAvail(idx, 'is_active', v)}
-							/>
-							{entry.is_active ? (
-								<div className="flex items-center gap-2">
-									<Input
-										type="time"
-										value={entry.start_time}
-										onChange={(e) => updateAvail(idx, 'start_time', e.target.value)}
-										className="w-32"
-									/>
-									<span className="text-muted-foreground text-sm">to</span>
-									<Input
-										type="time"
-										value={entry.end_time}
-										onChange={(e) => updateAvail(idx, 'end_time', e.target.value)}
-										className="w-32"
-									/>
-								</div>
-							) : (
-								<span className="text-sm text-muted-foreground">Day off</span>
-							)}
-						</div>
-					))}
-				</CardContent>
-			</Card>
+				{workers.length === 1 && (
+					<p className="text-sm text-muted-foreground">
+						Schedule for <span className="font-medium text-foreground">{selectedWorker.business_name}</span>
+					</p>
+				)}
 
-			{/* Blocked Dates */}
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between">
-					<CardTitle className="text-lg">Time Off</CardTitle>
-					{!addingDate && (
-						<Button size="sm" variant="outline" onClick={() => setAddingDate(true)}>
-							<Plus className="h-4 w-4 mr-2" />
-							Add
+				{/* Weekly Availability */}
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between">
+						<CardTitle className="text-lg">Weekly Availability</CardTitle>
+						<Button size="sm" onClick={handleSaveAvailability} disabled={savingAvail}>
+							{savingAvail ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+							Save
 						</Button>
-					)}
-				</CardHeader>
-				<CardContent className="space-y-3">
-					{addingDate && (
-						<div className="flex items-end gap-3 rounded-lg border p-3 bg-muted/30">
-							<div className="space-y-1.5">
-								<Label className="text-xs">Date</Label>
-								<Input
-									type="date"
-									value={newDate}
-									onChange={(e) => setNewDate(e.target.value)}
-									className="w-40"
-								/>
-							</div>
-							<div className="space-y-1.5 flex-1">
-								<Label className="text-xs">Reason (optional)</Label>
-								<Input
-									value={newReason}
-									onChange={(e) => setNewReason(e.target.value)}
-									placeholder="Vacation, personal day..."
-								/>
-							</div>
-							<Button size="sm" onClick={handleAddBlockedDate} disabled={savingDate}>
-								{savingDate ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
-							</Button>
-							<Button size="sm" variant="ghost" onClick={() => { setAddingDate(false); setNewDate(''); setNewReason('') }}>
-								<X className="h-4 w-4" />
-							</Button>
-						</div>
-					)}
-
-					{blocked.length === 0 && !addingDate ? (
-						<div className="flex flex-col items-center justify-center py-8 text-center">
-							<CalendarOff className="h-8 w-8 text-muted-foreground/30" />
-							<p className="mt-2 text-sm text-muted-foreground">No blocked dates</p>
-							<p className="text-xs text-muted-foreground/70">Add dates when you&apos;re not available</p>
-						</div>
-					) : (
-						blocked.map((bd) => (
-							<div key={bd.id} className="flex items-center justify-between rounded-lg border p-3">
-								<div>
-									<p className="text-sm font-medium">{bd.date}</p>
-									{bd.reason && <p className="text-xs text-muted-foreground">{bd.reason}</p>}
+					</CardHeader>
+					<CardContent className="space-y-3">
+						{avail.map((entry, idx) => (
+							<div
+								key={entry.day_of_week}
+								className={cn(
+									'flex items-center gap-4 rounded-lg border p-3 transition-colors',
+									entry.is_active ? 'bg-background' : 'bg-muted/50'
+								)}
+							>
+								<div className="w-28 shrink-0">
+									<p className="text-sm font-medium">{DAYS[idx]}</p>
 								</div>
-								<Button
-									size="icon"
-									variant="ghost"
-									className="text-destructive hover:text-destructive"
-									onClick={() => handleRemoveBlockedDate(bd.id)}
-									disabled={savingDate}
-								>
-									<Trash2 className="h-4 w-4" />
+								<Switch
+									checked={entry.is_active}
+									onCheckedChange={(v) => updateAvail(idx, 'is_active', v)}
+								/>
+								{entry.is_active ? (
+									<div className="flex items-center gap-2">
+										<Input
+											type="time"
+											value={entry.start_time}
+											onChange={(e) => updateAvail(idx, 'start_time', e.target.value)}
+											className="w-32"
+										/>
+										<span className="text-muted-foreground text-sm">to</span>
+										<Input
+											type="time"
+											value={entry.end_time}
+											onChange={(e) => updateAvail(idx, 'end_time', e.target.value)}
+											className="w-32"
+										/>
+									</div>
+								) : (
+									<span className="text-sm text-muted-foreground">Day off</span>
+								)}
+							</div>
+						))}
+					</CardContent>
+				</Card>
+
+				{/* Blocked Dates */}
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between">
+						<CardTitle className="text-lg">Time Off</CardTitle>
+						{!addingDate && (
+							<Button size="sm" variant="outline" onClick={() => setAddingDate(true)}>
+								<Plus className="h-4 w-4 mr-2" />
+								Add
+							</Button>
+						)}
+					</CardHeader>
+					<CardContent className="space-y-3">
+						{addingDate && (
+							<div className="flex items-end gap-3 rounded-lg border p-3 bg-muted/30">
+								<div className="space-y-1.5">
+									<Label className="text-xs">Date</Label>
+									<Input
+										type="date"
+										value={newDate}
+										onChange={(e) => setNewDate(e.target.value)}
+										className="w-40"
+									/>
+								</div>
+								<div className="space-y-1.5 flex-1">
+									<Label className="text-xs">Reason (optional)</Label>
+									<Input
+										value={newReason}
+										onChange={(e) => setNewReason(e.target.value)}
+										placeholder="Vacation, personal day..."
+									/>
+								</div>
+								<Button size="sm" onClick={handleAddBlockedDate} disabled={savingDate}>
+									{savingDate ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+								</Button>
+								<Button size="sm" variant="ghost" onClick={() => { setAddingDate(false); setNewDate(''); setNewReason('') }}>
+									<X className="h-4 w-4" />
 								</Button>
 							</div>
-						))
-					)}
-				</CardContent>
-			</Card>
-		</div>
+						)}
+
+						{blocked.length === 0 && !addingDate ? (
+							<div className="flex flex-col items-center justify-center py-8 text-center">
+								<CalendarOff className="h-8 w-8 text-muted-foreground/30" />
+								<p className="mt-2 text-sm text-muted-foreground">No blocked dates</p>
+								<p className="text-xs text-muted-foreground/70">Add dates when you&apos;re not available</p>
+							</div>
+						) : (
+							blocked.map((bd) => (
+								<div key={bd.id} className="flex items-center justify-between rounded-lg border p-3">
+									<div>
+										<p className="text-sm font-medium">{bd.date}</p>
+										{bd.reason && <p className="text-xs text-muted-foreground">{bd.reason}</p>}
+									</div>
+									<Button
+										size="icon"
+										variant="ghost"
+										className="text-destructive hover:text-destructive"
+										onClick={() => handleRemoveBlockedDate(bd.id)}
+										disabled={savingDate}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</div>
+							))
+						)}
+					</CardContent>
+				</Card>
+			</div>
+		</PageTransition>
 	)
 }

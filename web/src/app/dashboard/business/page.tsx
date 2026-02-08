@@ -1,3 +1,4 @@
+import { PageTransition } from '@/components/page-transition'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { BusinessClient } from './business-client'
@@ -39,10 +40,12 @@ export default async function BusinessPage() {
 		.order('day_of_week')
 
 	return (
-		<BusinessClient
-			business={business}
-			categories={categories ?? []}
-			hours={hours ?? []}
-		/>
+		<PageTransition>
+			<BusinessClient
+				business={business}
+				categories={categories ?? []}
+				hours={hours ?? []}
+			/>
+		</PageTransition>
 	)
 }
