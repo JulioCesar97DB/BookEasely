@@ -61,20 +61,28 @@ export default function DiscoverScreen() {
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 	const [categories, setCategories] = useState<Category[]>(defaultCategories)
 	const [businesses, setBusinesses] = useState<BusinessWithCategory[]>([])
+	const [popularBusinesses, setPopularBusinesses] = useState<BusinessWithCategory[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
+	const hasActiveFilters = !!selectedCategory || !!searchQuery.trim()
 
 	useEffect(() => {
-		async function loadCategories() {
-			const { data } = await supabase
-				.from('categories')
-				.select('*')
-				.order('sort_order')
-			if (data && data.length > 0) {
-				setCategories(data)
+		async function loadInitialData() {
+			const [catResult, popResult] = await Promise.all([
+				supabase.from('categories').select('*').order('sort_order'),
+				supabase
+					.from('businesses')
+					.select('*, categories(name, slug)')
+					.eq('is_active', true)
+					.order('rating_avg', { ascending: false })
+					.limit(10),
+			])
+			if (catResult.data && catResult.data.length > 0) {
+				setCategories(catResult.data)
 			}
+			setPopularBusinesses(popResult.data ?? [])
 		}
-		loadCategories()
+		loadInitialData()
 	}, [])
 
 	const fetchBusinesses = useCallback(async (category: string | null, query: string) => {
@@ -231,10 +239,54 @@ export default function DiscoverScreen() {
 				))}
 			</ScrollView>
 
+			{/* Popular near you */}
+			{!hasActiveFilters && popularBusinesses.length > 0 && (
+				<View style={styles.popularSection}>
+					<View style={styles.popularHeader}>
+						<Text style={styles.popularTitle}>Popular near you</Text>
+					</View>
+					<ScrollView
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						contentContainerStyle={styles.popularScroll}
+					>
+						{popularBusinesses.map((item) => (
+							<View key={item.id} style={styles.popularCard}>
+								<View style={styles.popularImage}>
+									{item.cover_image_url ? (
+										<Image source={{ uri: item.cover_image_url }} style={styles.popularImageInner} />
+									) : (
+										<View style={styles.popularImagePlaceholder}>
+											<Ionicons name="storefront-outline" size={22} color={colors.border} />
+										</View>
+									)}
+									{item.rating_count > 0 && (
+										<View style={styles.popularRating}>
+											<Ionicons name="star" size={10} color={colors.primary} />
+											<Text style={styles.popularRatingText}>{Number(item.rating_avg).toFixed(1)}</Text>
+										</View>
+									)}
+								</View>
+								<View style={styles.popularInfo}>
+									<Text style={styles.popularName} numberOfLines={1}>{item.name}</Text>
+									<Text style={styles.popularCategory} numberOfLines={1}>
+										{item.categories?.name ?? 'Uncategorized'}
+									</Text>
+								</View>
+							</View>
+						))}
+					</ScrollView>
+				</View>
+			)}
+
 			{/* Results count */}
 			<View style={styles.resultsRow}>
 				<Text style={styles.resultsText}>
-					{isLoading ? 'Searching...' : `${businesses.length} ${businesses.length === 1 ? 'business' : 'businesses'} found`}
+					{isLoading
+						? 'Searching...'
+						: hasActiveFilters
+							? `${businesses.length} ${businesses.length === 1 ? 'business' : 'businesses'} found`
+							: `All businesses (${businesses.length})`}
 				</Text>
 			</View>
 		</>
@@ -399,6 +451,77 @@ const styles = StyleSheet.create({
 	},
 	chipTextActive: {
 		color: colors.white,
+	},
+	popularSection: {
+		paddingBottom: spacing.lg,
+	},
+	popularHeader: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		paddingHorizontal: spacing['2xl'],
+		marginBottom: spacing.md,
+	},
+	popularTitle: {
+		fontSize: fontSize.lg,
+		fontWeight: '700',
+		color: colors.foreground,
+	},
+	popularScroll: {
+		paddingHorizontal: spacing['2xl'],
+		gap: spacing.md,
+	},
+	popularCard: {
+		width: 200,
+		borderRadius: radius.lg,
+		backgroundColor: colors.surface,
+		borderWidth: 1,
+		borderColor: colors.border,
+		overflow: 'hidden',
+	},
+	popularImage: {
+		height: 120,
+		backgroundColor: colors.surfaceSecondary,
+	},
+	popularImageInner: {
+		width: '100%',
+		height: '100%',
+		resizeMode: 'cover',
+	},
+	popularImagePlaceholder: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	popularRating: {
+		position: 'absolute',
+		top: spacing.sm,
+		right: spacing.sm,
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 3,
+		paddingHorizontal: 6,
+		paddingVertical: 3,
+		borderRadius: radius.sm,
+		backgroundColor: colors.white,
+	},
+	popularRatingText: {
+		fontSize: fontSize.xs,
+		fontWeight: '600',
+		color: colors.primary,
+	},
+	popularInfo: {
+		padding: spacing.md,
+		gap: 2,
+	},
+	popularName: {
+		fontSize: fontSize.sm,
+		fontWeight: '600',
+		color: colors.foreground,
+	},
+	popularCategory: {
+		fontSize: fontSize.xs,
+		color: colors.foregroundSecondary,
 	},
 	resultsRow: {
 		paddingHorizontal: spacing['2xl'],
