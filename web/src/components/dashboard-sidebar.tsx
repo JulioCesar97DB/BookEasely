@@ -28,27 +28,27 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-interface NavItem {
+export interface NavItem {
 	label: string
 	href: string
 	icon: React.ComponentType<{ className?: string }>
 }
 
-const clientNav: NavItem[] = [
+export const clientNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 	{ label: 'My Bookings', href: '/dashboard/bookings', icon: Calendar },
 	{ label: 'Favorites', href: '/dashboard/favorites', icon: Heart },
 	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
 
-const workerNav: NavItem[] = [
+export const workerNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 	{ label: 'My Schedule', href: '/dashboard/my-schedule', icon: Clock },
 	{ label: 'My Bookings', href: '/dashboard/bookings', icon: Calendar },
 	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
 
-const businessNav: NavItem[] = [
+export const businessNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 	{ label: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
 	{ label: 'Schedule', href: '/dashboard/schedule', icon: Clock },
@@ -57,6 +57,10 @@ const businessNav: NavItem[] = [
 	{ label: 'Reviews', href: '/dashboard/reviews', icon: Star },
 	{ label: 'Business', href: '/dashboard/business', icon: Store },
 ]
+
+export function getNavForRole(role: UserRole, isWorker?: boolean): NavItem[] {
+	return role === 'business_owner' ? businessNav : isWorker ? workerNav : clientNav
+}
 
 const SIDEBAR_EXPANDED = 256
 const SIDEBAR_COLLAPSED = 68
@@ -84,7 +88,7 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 	return (
 		<TooltipProvider>
 			<motion.aside
-				className="relative flex h-svh flex-col border-r bg-sidebar overflow-visible"
+				className="relative hidden md:flex h-svh flex-col border-r bg-sidebar overflow-visible"
 				animate={{ width: collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
 				transition={mounted ? { duration: 0.2, ease: 'easeInOut' } : { duration: 0 }}
 				style={{ flexShrink: 0 }}
