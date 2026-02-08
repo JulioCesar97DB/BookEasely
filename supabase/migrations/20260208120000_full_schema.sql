@@ -1,5 +1,5 @@
--- BookEasely Initial Schema
--- Multi-worker booking platform for SMBs
+-- BookEasely Full Schema
+-- Consolidated migration: initial schema + phase 2 + worker invitations
 
 -- ============================================
 -- EXTENSIONS
@@ -106,6 +106,7 @@ CREATE TABLE public.worker_availability (
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
+  UNIQUE(worker_id, day_of_week),
   CHECK (start_time < end_time)
 );
 
@@ -122,6 +123,23 @@ CREATE TABLE public.worker_blocked_dates (
 );
 
 -- ============================================
+-- WORKER INVITATIONS
+-- ============================================
+CREATE TABLE public.worker_invitations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  bio TEXT,
+  specialties TEXT[],
+  invited_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  accepted_at TIMESTAMPTZ,
+  UNIQUE(email, business_id)
+);
+
+-- ============================================
 -- SERVICES
 -- ============================================
 CREATE TABLE public.services (
@@ -132,7 +150,8 @@ CREATE TABLE public.services (
   price DECIMAL(10,2) NOT NULL,
   duration_minutes INTEGER NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ============================================
@@ -221,6 +240,8 @@ CREATE INDEX idx_workers_user ON public.workers(user_id);
 CREATE INDEX idx_worker_availability_worker ON public.worker_availability(worker_id);
 CREATE INDEX idx_worker_blocked_dates_worker ON public.worker_blocked_dates(worker_id);
 CREATE INDEX idx_worker_blocked_dates_date ON public.worker_blocked_dates(worker_id, date);
+CREATE INDEX idx_worker_invitations_business ON public.worker_invitations(business_id);
+CREATE INDEX idx_worker_invitations_email ON public.worker_invitations(email);
 CREATE INDEX idx_services_business ON public.services(business_id);
 CREATE INDEX idx_service_workers_service ON public.service_workers(service_id);
 CREATE INDEX idx_service_workers_worker ON public.service_workers(worker_id);
@@ -246,6 +267,7 @@ ALTER TABLE public.business_hours ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.worker_availability ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.worker_blocked_dates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.worker_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_workers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
@@ -257,34 +279,34 @@ ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 -- RLS POLICIES
 -- ============================================
 
--- PROFILES: anyone can read, users update own
+-- PROFILES
 CREATE POLICY "profiles_select" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "profiles_insert" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "profiles_update" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- CATEGORIES: public read
+-- CATEGORIES
 CREATE POLICY "categories_select" ON public.categories FOR SELECT USING (true);
 
--- BUSINESSES: public read active, owners manage
+-- BUSINESSES
 CREATE POLICY "businesses_select" ON public.businesses FOR SELECT USING (is_active = true);
 CREATE POLICY "businesses_select_own" ON public.businesses FOR SELECT USING (owner_id = auth.uid());
 CREATE POLICY "businesses_insert" ON public.businesses FOR INSERT WITH CHECK (owner_id = auth.uid());
 CREATE POLICY "businesses_update" ON public.businesses FOR UPDATE USING (owner_id = auth.uid());
 CREATE POLICY "businesses_delete" ON public.businesses FOR DELETE USING (owner_id = auth.uid());
 
--- BUSINESS_HOURS: public read, owners manage
+-- BUSINESS_HOURS
 CREATE POLICY "business_hours_select" ON public.business_hours FOR SELECT USING (true);
 CREATE POLICY "business_hours_manage" ON public.business_hours FOR ALL USING (
   EXISTS (SELECT 1 FROM public.businesses WHERE id = business_hours.business_id AND owner_id = auth.uid())
 );
 
--- WORKERS: public read, owners manage
+-- WORKERS
 CREATE POLICY "workers_select" ON public.workers FOR SELECT USING (true);
 CREATE POLICY "workers_manage" ON public.workers FOR ALL USING (
   EXISTS (SELECT 1 FROM public.businesses WHERE id = workers.business_id AND owner_id = auth.uid())
 );
 
--- WORKER_AVAILABILITY: public read, owners + worker manage
+-- WORKER_AVAILABILITY
 CREATE POLICY "worker_availability_select" ON public.worker_availability FOR SELECT USING (true);
 CREATE POLICY "worker_availability_manage_owner" ON public.worker_availability FOR ALL USING (
   EXISTS (
@@ -297,7 +319,7 @@ CREATE POLICY "worker_availability_manage_self" ON public.worker_availability FO
   EXISTS (SELECT 1 FROM public.workers WHERE id = worker_availability.worker_id AND user_id = auth.uid())
 );
 
--- WORKER_BLOCKED_DATES: owners + worker manage
+-- WORKER_BLOCKED_DATES
 CREATE POLICY "worker_blocked_dates_select" ON public.worker_blocked_dates FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.workers WHERE id = worker_blocked_dates.worker_id AND user_id = auth.uid())
   OR EXISTS (
@@ -317,13 +339,21 @@ CREATE POLICY "worker_blocked_dates_manage_self" ON public.worker_blocked_dates 
   EXISTS (SELECT 1 FROM public.workers WHERE id = worker_blocked_dates.worker_id AND user_id = auth.uid())
 );
 
--- SERVICES: public read, owners manage
+-- WORKER_INVITATIONS
+CREATE POLICY "worker_invitations_manage_owner" ON public.worker_invitations FOR ALL USING (
+  business_id IN (SELECT id FROM public.businesses WHERE owner_id = auth.uid())
+);
+CREATE POLICY "worker_invitations_select_self" ON public.worker_invitations FOR SELECT USING (
+  email IN (SELECT email FROM public.profiles WHERE id = auth.uid())
+);
+
+-- SERVICES
 CREATE POLICY "services_select" ON public.services FOR SELECT USING (true);
 CREATE POLICY "services_manage" ON public.services FOR ALL USING (
   EXISTS (SELECT 1 FROM public.businesses WHERE id = services.business_id AND owner_id = auth.uid())
 );
 
--- SERVICE_WORKERS: public read, owners manage
+-- SERVICE_WORKERS
 CREATE POLICY "service_workers_select" ON public.service_workers FOR SELECT USING (true);
 CREATE POLICY "service_workers_manage" ON public.service_workers FOR ALL USING (
   EXISTS (
@@ -333,7 +363,7 @@ CREATE POLICY "service_workers_manage" ON public.service_workers FOR ALL USING (
   )
 );
 
--- BOOKINGS: clients see own, business owners see theirs
+-- BOOKINGS
 CREATE POLICY "bookings_select_client" ON public.bookings FOR SELECT USING (client_id = auth.uid());
 CREATE POLICY "bookings_select_owner" ON public.bookings FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.businesses WHERE id = bookings.business_id AND owner_id = auth.uid())
@@ -350,7 +380,7 @@ CREATE POLICY "bookings_update_worker" ON public.bookings FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.workers WHERE id = bookings.worker_id AND user_id = auth.uid())
 );
 
--- REVIEWS: public read visible, clients create for own bookings
+-- REVIEWS
 CREATE POLICY "reviews_select" ON public.reviews FOR SELECT USING (is_flagged = false);
 CREATE POLICY "reviews_insert" ON public.reviews FOR INSERT WITH CHECK (
   client_id = auth.uid()
@@ -360,11 +390,11 @@ CREATE POLICY "reviews_update_owner" ON public.reviews FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.businesses WHERE id = reviews.business_id AND owner_id = auth.uid())
 );
 
--- NOTIFICATIONS: users see own
+-- NOTIFICATIONS
 CREATE POLICY "notifications_select" ON public.notifications FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "notifications_update" ON public.notifications FOR UPDATE USING (user_id = auth.uid());
 
--- FAVORITES: users manage own
+-- FAVORITES
 CREATE POLICY "favorites_select" ON public.favorites FOR SELECT USING (client_id = auth.uid());
 CREATE POLICY "favorites_insert" ON public.favorites FOR INSERT WITH CHECK (client_id = auth.uid());
 CREATE POLICY "favorites_delete" ON public.favorites FOR DELETE USING (client_id = auth.uid());
@@ -385,6 +415,8 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.businesses
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.services
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.bookings
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
@@ -411,7 +443,31 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Update business rating on new review
+-- Auto-link pending invitations when a new profile is created
+CREATE OR REPLACE FUNCTION public.handle_worker_invitation_on_signup()
+RETURNS TRIGGER AS $$
+DECLARE
+  inv RECORD;
+BEGIN
+  FOR inv IN
+    SELECT * FROM public.worker_invitations
+    WHERE email = NEW.email AND status = 'pending'
+  LOOP
+    INSERT INTO public.workers (user_id, business_id, display_name, bio, specialties, is_active)
+    VALUES (NEW.id, inv.business_id, inv.display_name, inv.bio, inv.specialties, true)
+    ON CONFLICT (user_id, business_id) DO NOTHING;
+
+    UPDATE public.worker_invitations SET status = 'accepted', accepted_at = now() WHERE id = inv.id;
+  END LOOP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_profile_created_check_invitations
+  AFTER INSERT ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_worker_invitation_on_signup();
+
+-- Update business rating on new/updated review
 CREATE OR REPLACE FUNCTION public.handle_review_rating()
 RETURNS TRIGGER AS $$
 BEGIN
