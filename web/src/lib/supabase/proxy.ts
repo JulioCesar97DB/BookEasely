@@ -65,9 +65,7 @@ export async function updateSession(request: NextRequest) {
 	// Auth routes (login, signup, reset) — redirect logged-in users to dashboard
 	if (isAuthRoute(pathname)) {
 		if (user) {
-			const url = request.nextUrl.clone()
-			url.pathname = '/dashboard'
-			return NextResponse.redirect(url)
+			return redirectWithCookies(request, '/dashboard', supabaseResponse)
 		}
 		return supabaseResponse
 	}
@@ -82,8 +80,27 @@ export async function updateSession(request: NextRequest) {
 		const url = request.nextUrl.clone()
 		url.pathname = '/auth/login'
 		url.searchParams.set('next', pathname)
-		return NextResponse.redirect(url)
+		const redirect = NextResponse.redirect(url)
+		supabaseResponse.cookies.getAll().forEach((cookie) => {
+			redirect.cookies.set(cookie.name, cookie.value)
+		})
+		return redirect
 	}
 
 	return supabaseResponse
+}
+
+/** Redirect while preserving supabase session cookies */
+function redirectWithCookies(
+	request: NextRequest,
+	pathname: string,
+	supabaseResponse: NextResponse,
+) {
+	const url = request.nextUrl.clone()
+	url.pathname = pathname
+	const redirect = NextResponse.redirect(url)
+	supabaseResponse.cookies.getAll().forEach((cookie) => {
+		redirect.cookies.set(cookie.name, cookie.value)
+	})
+	return redirect
 }
