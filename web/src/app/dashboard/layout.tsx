@@ -32,9 +32,18 @@ export default async function DashboardLayout({
 		redirect('/onboarding')
 	}
 
+	// Check if user is a worker (has active worker records)
+	const { count: workerCount } = await supabase
+		.from('workers')
+		.select('id', { count: 'exact', head: true })
+		.eq('user_id', user.id)
+		.eq('is_active', true)
+
+	const isWorker = (workerCount ?? 0) > 0
+
 	return (
 		<div className="flex min-h-svh">
-			<DashboardSidebar role={role} userName={userName} />
+			<DashboardSidebar role={role} userName={userName} isWorker={isWorker} />
 			<main className="flex-1 overflow-auto">
 				<div className="mx-auto max-w-6xl px-6 py-8">
 					{children}

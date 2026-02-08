@@ -36,6 +36,13 @@ const clientNav: NavItem[] = [
 	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
 
+const workerNav: NavItem[] = [
+	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+	{ label: 'My Schedule', href: '/dashboard/my-schedule', icon: Clock },
+	{ label: 'My Bookings', href: '/dashboard/bookings', icon: Calendar },
+	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
+]
+
 const businessNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 	{ label: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
@@ -46,9 +53,9 @@ const businessNav: NavItem[] = [
 	{ label: 'Business', href: '/dashboard/business', icon: Store },
 ]
 
-export function DashboardSidebar({ role, userName }: { role: UserRole; userName: string }) {
+export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole; userName: string; isWorker?: boolean }) {
 	const pathname = usePathname()
-	const nav = role === 'business_owner' ? businessNav : clientNav
+	const nav = role === 'business_owner' ? businessNav : isWorker ? workerNav : clientNav
 
 	return (
 		<aside className="flex h-svh w-64 flex-col border-r bg-sidebar">
@@ -102,12 +109,12 @@ export function DashboardSidebar({ role, userName }: { role: UserRole; userName:
 				</Link>
 
 				<div className="flex items-center justify-between px-3 py-2">
-					<div className="flex items-center gap-2 min-w-0">
+					<Link href="/dashboard/profile" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
 						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
 							{userName.charAt(0).toUpperCase()}
 						</div>
 						<span className="truncate text-sm font-medium">{userName}</span>
-					</div>
+					</Link>
 					<div className="flex items-center gap-1">
 						<ThemeToggle className="h-8 w-8 shrink-0 text-muted-foreground" />
 						<form action={signOut}>
