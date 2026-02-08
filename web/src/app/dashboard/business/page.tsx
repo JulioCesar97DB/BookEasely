@@ -1,21 +1,10 @@
 import { PageTransition } from '@/components/page-transition'
+import { getUserBusiness } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { BusinessClient } from './business-client'
 
 export default async function BusinessPage() {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
-
-	if (!user) {
-		redirect('/auth/login')
-	}
-
-	const { data: business } = await supabase
-		.from('businesses')
-		.select('*')
-		.eq('owner_id', user.id)
-		.single()
+	const business = await getUserBusiness()
 
 	if (!business) {
 		return (
@@ -28,16 +17,19 @@ export default async function BusinessPage() {
 		)
 	}
 
-	const { data: categories } = await supabase
-		.from('categories')
-		.select('id, name, slug')
-		.order('sort_order')
+	const supabase = await createClient()
 
-	const { data: hours } = await supabase
-		.from('business_hours')
-		.select('*')
-		.eq('business_id', business.id)
-		.order('day_of_week')
+	const [{ data: categories }, { data: hours }] = await Promise.all([
+		supabase
+			.from('categories')
+			.select('id, name, slug')
+			.order('sort_order'),
+		supabase
+			.from('business_hours')
+			.select('*')
+			.eq('business_id', business.id)
+			.order('day_of_week'),
+	])
 
 	return (
 		<PageTransition>

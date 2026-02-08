@@ -1,20 +1,9 @@
+import { getUserBusiness } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { ScheduleClient } from './schedule-client'
 
 export default async function SchedulePage() {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
-
-	if (!user) {
-		redirect('/auth/login')
-	}
-
-	const { data: business } = await supabase
-		.from('businesses')
-		.select('id')
-		.eq('owner_id', user.id)
-		.single()
+	const business = await getUserBusiness()
 
 	if (!business) {
 		return (
@@ -27,25 +16,26 @@ export default async function SchedulePage() {
 		)
 	}
 
-	const { data: businessHours } = await supabase
-		.from('business_hours')
-		.select('*')
-		.eq('business_id', business.id)
-		.order('day_of_week')
+	const supabase = await createClient()
 
-	const { data: workers } = await supabase
-		.from('workers')
-		.select('id, display_name, is_active')
-		.eq('business_id', business.id)
-		.eq('is_active', true)
-
-	const { data: availability } = await supabase
-		.from('worker_availability')
-		.select('*')
-
-	const { data: blockedDates } = await supabase
-		.from('worker_blocked_dates')
-		.select('*')
+	const [{ data: businessHours }, { data: workers }, { data: availability }, { data: blockedDates }] = await Promise.all([
+		supabase
+			.from('business_hours')
+			.select('*')
+			.eq('business_id', business.id)
+			.order('day_of_week'),
+		supabase
+			.from('workers')
+			.select('id, display_name, is_active')
+			.eq('business_id', business.id)
+			.eq('is_active', true),
+		supabase
+			.from('worker_availability')
+			.select('*'),
+		supabase
+			.from('worker_blocked_dates')
+			.select('*'),
+	])
 
 	return (
 		<ScheduleClient

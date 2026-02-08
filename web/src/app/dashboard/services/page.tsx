@@ -1,20 +1,9 @@
+import { getUserBusiness } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { ServicesClient } from './services-client'
 
 export default async function ServicesPage() {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
-
-	if (!user) {
-		redirect('/auth/login')
-	}
-
-	const { data: business } = await supabase
-		.from('businesses')
-		.select('id')
-		.eq('owner_id', user.id)
-		.single()
+	const business = await getUserBusiness()
 
 	if (!business) {
 		return (
@@ -27,21 +16,23 @@ export default async function ServicesPage() {
 		)
 	}
 
-	const { data: services } = await supabase
-		.from('services')
-		.select('*')
-		.eq('business_id', business.id)
-		.order('created_at')
+	const supabase = await createClient()
 
-	const { data: workers } = await supabase
-		.from('workers')
-		.select('id, display_name, is_active')
-		.eq('business_id', business.id)
-		.eq('is_active', true)
-
-	const { data: serviceWorkers } = await supabase
-		.from('service_workers')
-		.select('service_id, worker_id')
+	const [{ data: services }, { data: workers }, { data: serviceWorkers }] = await Promise.all([
+		supabase
+			.from('services')
+			.select('*')
+			.eq('business_id', business.id)
+			.order('created_at'),
+		supabase
+			.from('workers')
+			.select('id, display_name, is_active')
+			.eq('business_id', business.id)
+			.eq('is_active', true),
+		supabase
+			.from('service_workers')
+			.select('service_id, worker_id'),
+	])
 
 	return (
 		<ServicesClient

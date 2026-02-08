@@ -1,8 +1,8 @@
 import { PageTransition } from '@/components/page-transition'
 import { Card, CardContent } from '@/components/ui/card'
+import { getAuthUser, getIsWorker } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
 import { Calendar, Clock } from 'lucide-react'
-import { redirect } from 'next/navigation'
 import { BookingActions } from './booking-actions'
 
 interface BookingRow {
@@ -26,45 +26,41 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default async function BookingsPage() {
+	const [user, isWorker] = await Promise.all([getAuthUser(), getIsWorker()])
+	const userId = user!.id
 	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
 
-	if (!user) {
-		redirect('/auth/login')
+	// Get worker IDs if user is a worker
+	let workerIds: string[] = []
+	if (isWorker) {
+		const { data: workerRecords } = await supabase
+			.from('workers')
+			.select('id')
+			.eq('user_id', userId)
+			.eq('is_active', true)
+		workerIds = workerRecords?.map((w) => w.id) ?? []
 	}
 
-	// Check if user is a worker
-	const { data: workerRecords } = await supabase
-		.from('workers')
-		.select('id')
-		.eq('user_id', user.id)
-		.eq('is_active', true)
-
-	const workerIds = workerRecords?.map((w) => w.id) ?? []
-	const isWorker = workerIds.length > 0
-
-	// Fetch client bookings (bookings the user made as a client)
-	const { data: rawClientBookings } = await supabase
-		.from('bookings')
-		.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), businesses(name)')
-		.eq('client_id', user.id)
-		.order('date', { ascending: false })
-		.limit(50)
+	// Fetch client bookings and worker bookings in parallel
+	const [{ data: rawClientBookings }, workerBookingsResult] = await Promise.all([
+		supabase
+			.from('bookings')
+			.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), businesses(name)')
+			.eq('client_id', userId)
+			.order('date', { ascending: false })
+			.limit(50),
+		workerIds.length > 0
+			? supabase
+				.from('bookings')
+				.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name)')
+				.in('worker_id', workerIds)
+				.order('date', { ascending: false })
+				.limit(50)
+			: Promise.resolve({ data: [] }),
+	])
 
 	const clientBookings = (rawClientBookings ?? []) as unknown as BookingRow[]
-
-	// Fetch worker bookings (appointments assigned to the worker)
-	let workerBookings: BookingRow[] = []
-	if (isWorker) {
-		const { data: rawWorkerBookings } = await supabase
-			.from('bookings')
-			.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name)')
-			.in('worker_id', workerIds)
-			.order('date', { ascending: false })
-			.limit(50)
-
-		workerBookings = (rawWorkerBookings ?? []) as unknown as BookingRow[]
-	}
+	const workerBookings = (workerBookingsResult.data ?? []) as unknown as BookingRow[]
 
 	const today = new Date().toISOString().split('T')[0]!
 
@@ -78,7 +74,6 @@ export default async function BookingsPage() {
 					</p>
 				</div>
 
-				{/* Worker Bookings Section */}
 				{isWorker && (
 					<div className="space-y-4">
 						<h2 className="text-lg font-semibold">Work Appointments</h2>
@@ -109,7 +104,6 @@ export default async function BookingsPage() {
 					</div>
 				)}
 
-				{/* Client Bookings Section */}
 				<div className="space-y-4">
 					<h2 className="text-lg font-semibold">{isWorker ? 'Personal Bookings' : 'My Bookings'}</h2>
 					{clientBookings.length === 0 ? (

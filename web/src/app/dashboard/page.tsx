@@ -2,11 +2,10 @@ import { AnimatedCard, AnimatedSection } from '@/components/animated-cards'
 import { PageTransition } from '@/components/page-transition'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getAuthProfile, getAuthUser, getIsWorker, getUserRole } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
-import type { UserRole } from '@/lib/types'
 import { Briefcase, Calendar, ClipboardList, Clock, Heart, Search, Star, Store, TrendingUp, Users } from 'lucide-react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 
 function getDateStrings() {
 	const now = new Date()
@@ -17,38 +16,25 @@ function getDateStrings() {
 }
 
 export default async function DashboardPage() {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	const [user, profile, role, isWorker] = await Promise.all([
+		getAuthUser(),
+		getAuthProfile(),
+		getUserRole(),
+		getIsWorker(),
+	])
 
-	if (!user) {
-		redirect('/auth/login')
-	}
-
-	const { data: profile } = await supabase
-		.from('profiles')
-		.select('full_name, role')
-		.eq('id', user.id)
-		.single()
-
-	const role = (profile?.role ?? user.user_metadata?.role ?? 'client') as UserRole
-	const firstName = (profile?.full_name || user.user_metadata?.full_name || '').split(' ')[0] || 'there'
+	const userId = user!.id
+	const firstName = (profile?.full_name || user?.user_metadata?.full_name || '').split(' ')[0] || 'there'
 
 	if (role === 'business_owner') {
-		return <BusinessOwnerDashboard firstName={firstName} userId={user.id} />
+		return <BusinessOwnerDashboard firstName={firstName} userId={userId} />
 	}
 
-	// Check if user is a worker
-	const { count: workerCount } = await supabase
-		.from('workers')
-		.select('id', { count: 'exact', head: true })
-		.eq('user_id', user.id)
-		.eq('is_active', true)
-
-	if ((workerCount ?? 0) > 0) {
-		return <WorkerDashboard firstName={firstName} userId={user.id} />
+	if (isWorker) {
+		return <WorkerDashboard firstName={firstName} userId={userId} />
 	}
 
-	return <ClientDashboard firstName={firstName} userId={user.id} />
+	return <ClientDashboard firstName={firstName} userId={userId} />
 }
 
 async function BusinessOwnerDashboard({ firstName, userId }: { firstName: string; userId: string }) {
@@ -166,7 +152,6 @@ async function BusinessOwnerDashboard({ firstName, userId }: { firstName: string
 async function WorkerDashboard({ firstName, userId }: { firstName: string; userId: string }) {
 	const supabase = await createClient()
 
-	// Get worker records with business info
 	const { data: workerRecords } = await supabase
 		.from('workers')
 		.select('id, display_name, business_id, businesses(name)')
@@ -198,7 +183,6 @@ async function WorkerDashboard({ firstName, userId }: { firstName: string; userI
 					</p>
 				</div>
 
-				{/* Stats */}
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					<AnimatedCard delay={0}>
 						<StatCard
@@ -226,7 +210,6 @@ async function WorkerDashboard({ firstName, userId }: { firstName: string; userI
 					</AnimatedCard>
 				</div>
 
-				{/* Quick Actions */}
 				<AnimatedSection delay={0.15}>
 					<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
 					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -236,7 +219,6 @@ async function WorkerDashboard({ firstName, userId }: { firstName: string; userI
 					</div>
 				</AnimatedSection>
 
-				{/* Businesses */}
 				{workerRecords && workerRecords.length > 0 && (
 					<AnimatedSection delay={0.25}>
 						<h2 className="text-lg font-semibold mb-4">Your Workplaces</h2>
@@ -333,7 +315,6 @@ async function ClientDashboard({ firstName, userId }: { firstName: string; userI
 					</AnimatedCard>
 				</div>
 
-				{/* Quick Actions */}
 				<AnimatedSection delay={0.15}>
 					<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
 					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

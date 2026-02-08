@@ -1,3 +1,4 @@
+import { getAuthUser } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
 import type { Worker, WorkerAvailability, WorkerBlockedDate } from '@/lib/types'
 import { redirect } from 'next/navigation'
@@ -8,18 +9,13 @@ interface WorkerWithBusiness extends Pick<Worker, 'id' | 'display_name' | 'busin
 }
 
 export default async function MySchedulePage() {
+	const user = await getAuthUser()
 	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
 
-	if (!user) {
-		redirect('/auth/login')
-	}
-
-	// Get worker records with business names
 	const { data: rawWorkers } = await supabase
 		.from('workers')
 		.select('id, display_name, business_id, businesses(name)')
-		.eq('user_id', user.id)
+		.eq('user_id', user!.id)
 		.eq('is_active', true)
 
 	const workers: WorkerWithBusiness[] = (rawWorkers ?? []) as unknown as WorkerWithBusiness[]
@@ -30,7 +26,6 @@ export default async function MySchedulePage() {
 
 	const workerIds = workers.map((w) => w.id)
 
-	// Fetch availability and blocked dates for all worker records
 	const [{ data: availability }, { data: blockedDates }] = await Promise.all([
 		supabase
 			.from('worker_availability')
