@@ -69,19 +69,33 @@ export default function DiscoverScreen() {
 			<ScrollView showsVerticalScrollIndicator={false}>
 				{/* Header */}
 				<View style={styles.header}>
-					<View>
-						<Text style={styles.greeting}>
-							{user ? 'Find your next appointment' : 'Book appointments'}
-						</Text>
-						<Text style={styles.title}>in seconds</Text>
+					<View style={styles.headerTop}>
+						<View style={styles.logoRow}>
+							<View style={styles.logoIcon}>
+								<Ionicons name="calendar" size={16} color={colors.white} />
+							</View>
+							<Text style={styles.logoText}>BookEasely</Text>
+						</View>
+						{!user && (
+							<Link href="/(auth)/login" asChild>
+								<TouchableOpacity style={styles.signInButton} activeOpacity={0.7}>
+									<Text style={styles.signInText}>Sign in</Text>
+								</TouchableOpacity>
+							</Link>
+						)}
 					</View>
-					{!user && (
-						<Link href="/(auth)/login" asChild>
-							<TouchableOpacity style={styles.signInButton} activeOpacity={0.7}>
-								<Text style={styles.signInText}>Sign in</Text>
-							</TouchableOpacity>
-						</Link>
-					)}
+					<View>
+						<Text style={styles.title}>
+							{user ? 'Find your next' : 'Book with the'}
+						</Text>
+						<Text style={styles.title}>
+							{user ? (
+								<Text style={styles.titleAccent}>appointment</Text>
+							) : (
+								<><Text style={styles.titleAccent}>best </Text>{'near you'}</>
+							)}
+						</Text>
+					</View>
 				</View>
 
 				{/* Search bar */}
@@ -172,22 +186,44 @@ const styles = StyleSheet.create({
 		backgroundColor: colors.background,
 	},
 	header: {
+		paddingHorizontal: spacing['2xl'],
+		paddingTop: spacing.md,
+		paddingBottom: spacing.xl,
+		gap: spacing.xl,
+	},
+	headerTop: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
-		alignItems: 'flex-start',
-		paddingHorizontal: spacing['2xl'],
-		paddingTop: spacing.lg,
-		paddingBottom: spacing.xl,
+		alignItems: 'center',
 	},
-	greeting: {
+	logoRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: spacing.sm,
+	},
+	logoIcon: {
+		width: 30,
+		height: 30,
+		borderRadius: radius.sm,
+		backgroundColor: colors.primary,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	logoText: {
 		fontSize: fontSize.base,
-		color: colors.foregroundSecondary,
-	},
-	title: {
-		fontSize: fontSize['3xl'],
 		fontWeight: '700',
 		color: colors.foreground,
-		letterSpacing: -0.5,
+		letterSpacing: -0.3,
+	},
+	title: {
+		fontSize: fontSize['4xl'],
+		fontWeight: '800',
+		color: colors.foreground,
+		letterSpacing: -1,
+		lineHeight: 42,
+	},
+	titleAccent: {
+		color: colors.primary,
 	},
 	signInButton: {
 		paddingHorizontal: spacing.lg,
