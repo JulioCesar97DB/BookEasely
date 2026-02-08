@@ -23,8 +23,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 		.order('rating_avg', { ascending: false })
 		.limit(50)
 
-	if (params.category) {
-		businessQuery = businessQuery.eq('categories.slug', params.category)
+	if (params.category && categories) {
+		const cat = categories.find((c) => c.slug === params.category)
+		if (cat) {
+			businessQuery = businessQuery.eq('category_id', cat.id)
+		}
 	}
 
 	if (params.q) {
@@ -57,13 +60,13 @@ function SearchSkeleton() {
 					<div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-muted" />
 				))}
 			</div>
-			<div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-				{Array.from({ length: 6 }).map((_, i) => (
+			<div className="mt-8 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+				{Array.from({ length: 8 }).map((_, i) => (
 					<div key={i} className="animate-pulse rounded-xl border bg-card">
-						<div className="aspect-video bg-muted" />
-						<div className="space-y-3 p-5">
-							<div className="h-5 w-3/4 rounded bg-muted" />
-							<div className="h-4 w-1/2 rounded bg-muted" />
+						<div className="aspect-square bg-muted" />
+						<div className="space-y-2 p-3">
+							<div className="h-4 w-3/4 rounded bg-muted" />
+							<div className="h-3 w-1/2 rounded bg-muted" />
 						</div>
 					</div>
 				))}

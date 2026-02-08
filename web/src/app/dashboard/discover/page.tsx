@@ -22,8 +22,11 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
 		.order('rating_avg', { ascending: false })
 		.limit(50)
 
-	if (params.category) {
-		businessQuery = businessQuery.eq('categories.slug', params.category)
+	if (params.category && categories) {
+		const cat = categories.find((c) => c.slug === params.category)
+		if (cat) {
+			businessQuery = businessQuery.eq('category_id', cat.id)
+		}
 	}
 
 	if (params.q) {

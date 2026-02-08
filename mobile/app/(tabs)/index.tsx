@@ -14,11 +14,13 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AnimatedScreen } from '../../components/animated-screen'
-import { BusinessImageCarousel } from '../../components/business-image-carousel'
+import { BusinessCard } from '../../components/business-card'
 import { useAuth } from '../../lib/auth-context'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
-import type { Business, Category } from '../../lib/types'
+import type { BusinessWithCategory, Category } from '../../lib/types'
+
+const POPULAR_CARD_WIDTH = 170
 
 const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 	barbershop: 'cut-outline',
@@ -53,27 +55,17 @@ const defaultCategories: Category[] = [
 	{ id: '12', name: 'Home Services', slug: 'home-services', icon_url: null, sort_order: 12 },
 ]
 
-interface BusinessWithCategory extends Business {
-	categories?: { name: string; slug: string } | null
-}
-
-const defaultPopular: BusinessWithCategory[] = [
-	{ id: 'p1', owner_id: '', name: "The Gentleman's Cut", slug: 'the-gentlemans-cut', description: null, category_id: '1', address: '', city: 'Downtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.9, rating_count: 127, is_active: true, created_at: '', updated_at: '', categories: { name: 'Barbershop', slug: 'barbershop' } },
-	{ id: 'p2', owner_id: '', name: 'Serenity Spa', slug: 'serenity-spa', description: null, category_id: '4', address: '', city: 'Midtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.8, rating_count: 89, is_active: true, created_at: '', updated_at: '', categories: { name: 'Spa & Massage', slug: 'spa-massage' } },
-	{ id: 'p3', owner_id: '', name: 'FitZone Studio', slug: 'fitzone-studio', description: null, category_id: '5', address: '', city: 'West Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.7, rating_count: 203, is_active: true, created_at: '', updated_at: '', categories: { name: 'Fitness', slug: 'fitness-training' } },
-	{ id: 'p4', owner_id: '', name: 'Pawfect Grooming', slug: 'pawfect-grooming', description: null, category_id: '8', address: '', city: 'East Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.9, rating_count: 64, is_active: true, created_at: '', updated_at: '', categories: { name: 'Pet Services', slug: 'pet-services' } },
-	{ id: 'p5', owner_id: '', name: 'Glow Beauty Bar', slug: 'glow-beauty-bar', description: null, category_id: '7', address: '', city: 'Uptown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.6, rating_count: 152, is_active: true, created_at: '', updated_at: '', categories: { name: 'Beauty', slug: 'beauty-aesthetics' } },
-]
-
 export default function DiscoverScreen() {
 	const { user } = useAuth()
 	const [searchQuery, setSearchQuery] = useState('')
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 	const [categories, setCategories] = useState<Category[]>(defaultCategories)
 	const [businesses, setBusinesses] = useState<BusinessWithCategory[]>([])
-	const [popularBusinesses, setPopularBusinesses] = useState<BusinessWithCategory[]>(defaultPopular)
+	const [popularBusinesses, setPopularBusinesses] = useState<BusinessWithCategory[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
+	const categoriesRef = useRef(categories)
+	categoriesRef.current = categories
 	const hasActiveFilters = !!selectedCategory || !!searchQuery.trim()
 
 	useEffect(() => {
@@ -107,7 +99,10 @@ export default function DiscoverScreen() {
 			.limit(50)
 
 		if (category) {
-			q = q.eq('categories.slug', category)
+			const cat = categoriesRef.current.find((c) => c.slug === category)
+			if (cat) {
+				q = q.eq('category_id', cat.id)
+			}
 		}
 		if (query.trim()) {
 			q = q.ilike('name', `%${query.trim()}%`)
@@ -129,43 +124,19 @@ export default function DiscoverScreen() {
 		}
 	}, [selectedCategory, searchQuery, fetchBusinesses])
 
-	const handleCategoryPress = (slug: string) => {
-		setSelectedCategory(prev => prev === slug ? null : slug)
-	}
+	const screenWidth = Dimensions.get('window').width
+	const gridGap = spacing.sm
+	const gridPadding = spacing['2xl']
+	const cardWidth = (screenWidth - gridPadding * 2 - gridGap) / 2
 
-	const cardWidth = Dimensions.get('window').width - spacing['2xl'] * 2
-
-	const renderBusinessCard = useCallback(({ item }: { item: BusinessWithCategory }) => (
-		<View style={styles.businessCard}>
-			<BusinessImageCarousel
-				images={item.photos?.length ? item.photos : (item.cover_image_url ? [item.cover_image_url] : [])}
-				height={160}
-				width={cardWidth}
-			/>
-			<View style={styles.businessInfo}>
-				<View style={styles.businessHeader}>
-					<Text style={styles.businessName} numberOfLines={1}>{item.name}</Text>
-					{item.rating_count > 0 && (
-						<View style={styles.ratingBadge}>
-							<Ionicons name="star" size={12} color={colors.primary} />
-							<Text style={styles.ratingText}>{Number(item.rating_avg).toFixed(1)}</Text>
-						</View>
-					)}
-				</View>
-				<Text style={styles.businessCategory} numberOfLines={1}>
-					{item.categories?.name ?? 'Uncategorized'}
-				</Text>
-				{(item.city || item.state) && (
-					<View style={styles.locationRow}>
-						<Ionicons name="location-outline" size={13} color={colors.foregroundSecondary} />
-						<Text style={styles.locationText} numberOfLines={1}>
-							{[item.city, item.state].filter(Boolean).join(', ')}
-						</Text>
-					</View>
-				)}
+	const renderBusinessCard = useCallback(({ item, index }: { item: BusinessWithCategory; index: number }) => {
+		const isLeft = index % 2 === 0
+		return (
+			<View style={{ marginLeft: isLeft ? gridPadding : gridGap / 2, marginRight: isLeft ? gridGap / 2 : gridPadding, marginBottom: gridGap }}>
+				<BusinessCard business={item} width={cardWidth} />
 			</View>
-		</View>
-	), [])
+		)
+	}, [cardWidth, gridGap, gridPadding])
 
 	const ListHeader = (
 		<>
@@ -234,7 +205,7 @@ export default function DiscoverScreen() {
 					<TouchableOpacity
 						key={cat.id}
 						style={[styles.chip, selectedCategory === cat.slug && styles.chipActive]}
-						onPress={() => handleCategoryPress(cat.slug)}
+						onPress={() => setSelectedCategory(prev => prev === cat.slug ? null : cat.slug)}
 						activeOpacity={0.7}
 					>
 						<Ionicons
@@ -253,7 +224,7 @@ export default function DiscoverScreen() {
 			{!hasActiveFilters && popularBusinesses.length > 0 && (
 				<View style={styles.popularSection}>
 					<View style={styles.popularHeader}>
-						<Text style={styles.popularTitle}>Popular near you</Text>
+						<Text style={styles.sectionTitle}>Popular near you</Text>
 					</View>
 					<ScrollView
 						horizontal
@@ -261,26 +232,8 @@ export default function DiscoverScreen() {
 						contentContainerStyle={styles.popularScroll}
 					>
 						{popularBusinesses.map((item) => (
-							<View key={item.id} style={styles.popularCard}>
-								<View style={styles.popularImage}>
-									<BusinessImageCarousel
-										images={item.photos?.length ? item.photos : (item.cover_image_url ? [item.cover_image_url] : [])}
-										height={120}
-										width={200}
-									/>
-									{item.rating_count > 0 && (
-										<View style={styles.popularRating}>
-											<Ionicons name="star" size={10} color={colors.primary} />
-											<Text style={styles.popularRatingText}>{Number(item.rating_avg).toFixed(1)}</Text>
-										</View>
-									)}
-								</View>
-								<View style={styles.popularInfo}>
-									<Text style={styles.popularName} numberOfLines={1}>{item.name}</Text>
-									<Text style={styles.popularCategory} numberOfLines={1}>
-										{item.categories?.name ?? 'Uncategorized'}
-									</Text>
-								</View>
+							<View key={item.id}>
+								<BusinessCard business={item} width={POPULAR_CARD_WIDTH} />
 							</View>
 						))}
 					</ScrollView>
@@ -311,7 +264,7 @@ export default function DiscoverScreen() {
 			<Text style={styles.emptySubtitle}>
 				Try adjusting your search or filter
 			</Text>
-			{(searchQuery || selectedCategory) && (
+			{hasActiveFilters && (
 				<TouchableOpacity
 					style={styles.clearButton}
 					onPress={() => { setSearchQuery(''); setSelectedCategory(null) }}
@@ -347,6 +300,7 @@ export default function DiscoverScreen() {
 					data={businesses}
 					renderItem={renderBusinessCard}
 					keyExtractor={(item) => item.id}
+					numColumns={2}
 					ListHeaderComponent={ListHeader}
 					ListEmptyComponent={ListEmpty}
 					ListFooterComponent={ListFooter}
@@ -466,13 +420,10 @@ const styles = StyleSheet.create({
 		paddingBottom: spacing.lg,
 	},
 	popularHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
 		paddingHorizontal: spacing['2xl'],
 		marginBottom: spacing.md,
 	},
-	popularTitle: {
+	sectionTitle: {
 		fontSize: fontSize.lg,
 		fontWeight: '700',
 		color: colors.foreground,
@@ -481,130 +432,11 @@ const styles = StyleSheet.create({
 		paddingHorizontal: spacing['2xl'],
 		gap: spacing.md,
 	},
-	popularCard: {
-		width: 200,
-		borderRadius: radius.lg,
-		backgroundColor: colors.surface,
-		borderWidth: 1,
-		borderColor: colors.border,
-		overflow: 'hidden',
-	},
-	popularImage: {
-		height: 120,
-		backgroundColor: colors.surfaceSecondary,
-	},
-	popularImageInner: {
-		width: '100%',
-		height: '100%',
-		resizeMode: 'cover',
-	},
-	popularImagePlaceholder: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	popularRating: {
-		position: 'absolute',
-		top: spacing.sm,
-		right: spacing.sm,
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 3,
-		paddingHorizontal: 6,
-		paddingVertical: 3,
-		borderRadius: radius.sm,
-		backgroundColor: colors.white,
-	},
-	popularRatingText: {
-		fontSize: fontSize.xs,
-		fontWeight: '600',
-		color: colors.primary,
-	},
-	popularInfo: {
-		padding: spacing.md,
-		gap: 2,
-	},
-	popularName: {
-		fontSize: fontSize.sm,
-		fontWeight: '600',
-		color: colors.foreground,
-	},
-	popularCategory: {
-		fontSize: fontSize.xs,
-		color: colors.foregroundSecondary,
-	},
 	resultsRow: {
 		paddingHorizontal: spacing['2xl'],
 		paddingBottom: spacing.md,
 	},
 	resultsText: {
-		fontSize: fontSize.sm,
-		color: colors.foregroundSecondary,
-	},
-	businessCard: {
-		marginHorizontal: spacing['2xl'],
-		marginBottom: spacing.lg,
-		borderRadius: radius.lg,
-		backgroundColor: colors.surface,
-		borderWidth: 1,
-		borderColor: colors.border,
-		overflow: 'hidden',
-	},
-	businessImage: {
-		height: 160,
-		backgroundColor: colors.surfaceSecondary,
-	},
-	businessImageInner: {
-		width: '100%',
-		height: '100%',
-		resizeMode: 'cover',
-	},
-	businessImagePlaceholder: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	businessInfo: {
-		padding: spacing.lg,
-		gap: 4,
-	},
-	businessHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-	},
-	businessName: {
-		flex: 1,
-		fontSize: fontSize.base,
-		fontWeight: '600',
-		color: colors.foreground,
-	},
-	ratingBadge: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 4,
-		paddingHorizontal: spacing.sm,
-		paddingVertical: 4,
-		borderRadius: radius.sm,
-		backgroundColor: colors.primaryLight,
-		marginLeft: spacing.sm,
-	},
-	ratingText: {
-		fontSize: fontSize.sm,
-		fontWeight: '600',
-		color: colors.primary,
-	},
-	businessCategory: {
-		fontSize: fontSize.sm,
-		color: colors.foregroundSecondary,
-	},
-	locationRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 4,
-		marginTop: 2,
-	},
-	locationText: {
 		fontSize: fontSize.sm,
 		color: colors.foregroundSecondary,
 	},

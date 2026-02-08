@@ -1,7 +1,9 @@
+import { BusinessCard } from '@/components/business-card'
 import { PublicHeader } from '@/components/public-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowRight, Camera, Clock, Dog, Dumbbell, GraduationCap, Heart, MapPin, Scissors, Search, Star, Stethoscope, Wrench } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { ArrowRight, Camera, Dog, Dumbbell, GraduationCap, Heart, MapPin, Scissors, Search, Stethoscope, Wrench } from 'lucide-react'
 import Link from 'next/link'
 
 const categories = [
@@ -15,34 +17,16 @@ const categories = [
 	{ name: 'Tutoring', slug: 'tutoring-education', icon: GraduationCap, color: 'bg-indigo-50 text-indigo-600' },
 ]
 
-const featuredBusinesses = [
-	{
-		name: 'The Gentleman\'s Cut',
-		category: 'Barbershop',
-		rating: 4.9,
-		reviews: 127,
-		image: null,
-		location: 'Downtown',
-	},
-	{
-		name: 'Serenity Spa',
-		category: 'Spa & Massage',
-		rating: 4.8,
-		reviews: 89,
-		image: null,
-		location: 'Midtown',
-	},
-	{
-		name: 'FitZone Studio',
-		category: 'Fitness',
-		rating: 4.7,
-		reviews: 203,
-		image: null,
-		location: 'West Side',
-	},
-]
+export default async function HomePage() {
+	const supabase = await createClient()
 
-export default function HomePage() {
+	const { data: featuredBusinesses } = await supabase
+		.from('businesses')
+		.select('*, categories(name, slug)')
+		.eq('is_active', true)
+		.order('rating_avg', { ascending: false })
+		.limit(8)
+
 	return (
 		<div className="min-h-svh">
 			<PublicHeader />
@@ -63,7 +47,6 @@ export default function HomePage() {
 							Discover local businesses, browse services, and schedule your next appointment — no account needed to explore.
 						</p>
 
-						{/* Search bar */}
 						<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
 							<div className="relative flex-1 sm:max-w-sm">
 								<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -118,7 +101,7 @@ export default function HomePage() {
 				</div>
 			</section>
 
-			{/* Featured businesses (placeholder) */}
+			{/* Popular near you */}
 			<section className="border-t bg-muted/30">
 				<div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between">
@@ -134,51 +117,21 @@ export default function HomePage() {
 						</Button>
 					</div>
 
-					<div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-						{featuredBusinesses.map((business) => (
-							<div
-								key={business.name}
-								className="group overflow-hidden rounded-xl border bg-card transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
-							>
-								{/* Image placeholder */}
-								<div className="aspect-video bg-linear-to-br from-muted to-muted/50">
-									<div className="flex h-full items-center justify-center text-muted-foreground/30">
-										<Search className="h-8 w-8" />
-									</div>
-								</div>
-
-								<div className="p-5">
-									<div className="flex items-start justify-between">
-										<div>
-											<h3 className="font-semibold group-hover:text-primary transition-colors">
-												{business.name}
-											</h3>
-											<p className="mt-0.5 text-sm text-muted-foreground">{business.category}</p>
-										</div>
-										<div className="flex items-center gap-1 rounded-md bg-primary/5 px-2 py-1">
-											<Star className="h-3.5 w-3.5 fill-primary text-primary" />
-											<span className="text-sm font-semibold text-primary">{business.rating}</span>
-										</div>
-									</div>
-
-									<div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-										<span className="flex items-center gap-1">
-											<MapPin className="h-3.5 w-3.5" />
-											{business.location}
-										</span>
-										<span className="flex items-center gap-1">
-											<Clock className="h-3.5 w-3.5" />
-											Open now
-										</span>
-									</div>
-
-									<Button variant="outline" size="sm" className="mt-4 w-full">
-										View services
-									</Button>
-								</div>
-							</div>
+					<div className="mt-8 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+						{(featuredBusinesses ?? []).map((business) => (
+							<BusinessCard key={business.id} business={business} />
 						))}
 					</div>
+
+					{(!featuredBusinesses || featuredBusinesses.length === 0) && (
+						<div className="flex flex-col items-center justify-center py-16 text-center">
+							<Search className="h-10 w-10 text-muted-foreground/30" />
+							<h3 className="mt-4 font-semibold">No businesses yet</h3>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Be the first to list your business on BookEasely
+							</p>
+						</div>
+					)}
 				</div>
 			</section>
 

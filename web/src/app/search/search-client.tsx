@@ -1,20 +1,14 @@
 'use client'
 
-import { BusinessImageCarousel } from '@/components/business-image-carousel'
-import { MapPin, Search, Star, X } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
-
+import { BusinessCard } from '@/components/business-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createClient } from '@/lib/supabase/client'
-import type { Business, Category } from '@/lib/types'
+import { useBusinessSearch } from '@/lib/hooks/use-business-search'
+import type { BusinessWithCategory, Category } from '@/lib/types'
 import { cn } from '@/lib/utils'
-
-interface BusinessWithCategory extends Business {
-	categories?: { name: string; slug: string } | null
-}
+import { Search, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useRef } from 'react'
 
 interface Props {
 	categories: Category[]
@@ -30,39 +24,23 @@ function SearchPageInner({
 	initialQuery,
 }: Props) {
 	const router = useRouter()
-	const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory)
-	const [searchQuery, setSearchQuery] = useState(initialQuery)
-	const [businesses, setBusinesses] = useState<BusinessWithCategory[]>(initialBusinesses)
-	const [isLoading, setIsLoading] = useState(false)
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
-	const isFirstRender = useRef(true)
+	const isFirstUrlUpdate = useRef(true)
 
-	const fetchBusinesses = useCallback(async (category: string | null, query: string) => {
-		setIsLoading(true)
-		const supabase = createClient()
-		let q = supabase
-			.from('businesses')
-			.select('*, categories(name, slug)')
-			.eq('is_active', true)
-			.order('rating_avg', { ascending: false })
-			.limit(50)
+	const {
+		businesses,
+		isLoading,
+		searchQuery,
+		setSearchQuery,
+		selectedCategory,
+		setSelectedCategory,
+		toggleCategory,
+		clearFilters,
+	} = useBusinessSearch({ categories, initialBusinesses, initialCategory, initialQuery })
 
-		if (category) {
-			q = q.eq('categories.slug', category)
-		}
-		if (query.trim()) {
-			q = q.ilike('name', `%${query.trim()}%`)
-		}
-
-		const { data } = await q
-		setBusinesses(data ?? [])
-		setIsLoading(false)
-	}, [])
-
+	// Sync URL with filter state (shallow, no re-render loop)
 	useEffect(() => {
-		// Skip refetch on first render — we already have server data
-		if (isFirstRender.current) {
-			isFirstRender.current = false
+		if (isFirstUrlUpdate.current) {
+			isFirstUrlUpdate.current = false
 			return
 		}
 
@@ -71,16 +49,7 @@ function SearchPageInner({
 		if (searchQuery.trim()) params.set('q', searchQuery.trim())
 		const newUrl = params.toString() ? `/search?${params}` : '/search'
 		router.replace(newUrl, { scroll: false })
-
-		if (debounceRef.current) clearTimeout(debounceRef.current)
-		debounceRef.current = setTimeout(() => {
-			fetchBusinesses(selectedCategory, searchQuery)
-		}, 300)
-
-		return () => {
-			if (debounceRef.current) clearTimeout(debounceRef.current)
-		}
-	}, [selectedCategory, searchQuery, router, fetchBusinesses])
+	}, [selectedCategory, searchQuery, router])
 
 	return (
 		<div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -119,7 +88,7 @@ function SearchPageInner({
 				{categories.map((cat) => (
 					<button
 						key={cat.id}
-						onClick={() => setSelectedCategory(selectedCategory === cat.slug ? null : cat.slug)}
+						onClick={() => toggleCategory(cat.slug)}
 						className={cn(
 							'shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
 							selectedCategory === cat.slug
@@ -147,7 +116,7 @@ function SearchPageInner({
 
 			{/* Business grid */}
 			{businesses.length > 0 ? (
-				<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
 					{businesses.map((business) => (
 						<BusinessCard key={business.id} business={business} />
 					))}
@@ -159,63 +128,12 @@ function SearchPageInner({
 					<p className="mt-1 text-sm text-muted-foreground">
 						Try adjusting your search or filter to find what you&apos;re looking for
 					</p>
-					<Button
-						variant="outline"
-						size="sm"
-						className="mt-4"
-						onClick={() => { setSearchQuery(''); setSelectedCategory(null) }}
-					>
+					<Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
 						Clear filters
 					</Button>
 				</div>
 			) : null}
 		</div>
-	)
-}
-
-function BusinessCard({ business }: { business: BusinessWithCategory }) {
-	return (
-		<Link
-			href={`/business/${business.slug}`}
-			className="group overflow-hidden rounded-xl border bg-card transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
-		>
-			<BusinessImageCarousel
-				images={business.photos?.length ? business.photos : (business.cover_image_url ? [business.cover_image_url] : [])}
-				alt={business.name}
-				aspectRatio="video"
-				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-			/>
-
-			<div className="p-5">
-				<div className="flex items-start justify-between">
-					<div className="min-w-0 flex-1">
-						<h3 className="truncate font-semibold group-hover:text-primary transition-colors">
-							{business.name}
-						</h3>
-						<p className="mt-0.5 text-sm text-muted-foreground">
-							{business.categories?.name ?? 'Uncategorized'}
-						</p>
-					</div>
-					{business.rating_count > 0 && (
-						<div className="ml-3 flex items-center gap-1 rounded-md bg-primary/5 px-2 py-1">
-							<Star className="h-3.5 w-3.5 fill-primary text-primary" />
-							<span className="text-sm font-semibold text-primary">
-								{Number(business.rating_avg).toFixed(1)}
-							</span>
-						</div>
-					)}
-				</div>
-
-				<div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-					{(business.city || business.state) && (
-						<span className="flex items-center gap-1">
-							<MapPin className="h-3.5 w-3.5" />
-							{[business.city, business.state].filter(Boolean).join(', ')}
-						</span>
-					)}
-				</div>
-			</div>
-		</Link>
 	)
 }
 
