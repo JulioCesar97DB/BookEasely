@@ -11,7 +11,7 @@ export default function MyWorkLayout() {
 				headerShadowVisible: false,
 			}}
 		>
-			<Stack.Screen name="index" options={{ headerShown: false }} />
+			<Stack.Screen name="index" options={{ headerShown: false, title: 'My Work' }} />
 			<Stack.Screen name="schedule" options={{ title: 'My Schedule' }} />
 			<Stack.Screen name="blocked-dates" options={{ title: 'Time Off' }} />
 			<Stack.Screen name="appointments" options={{ title: 'Appointments' }} />

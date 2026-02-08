@@ -12,7 +12,7 @@ export default function BusinessLayout() {
 				contentStyle: { backgroundColor: colors.background },
 			}}
 		>
-			<Stack.Screen name="index" options={{ headerShown: false }} />
+			<Stack.Screen name="index" options={{ headerShown: false, title: 'Business' }} />
 			<Stack.Screen name="profile" options={{ title: 'Edit Profile' }} />
 			<Stack.Screen name="services" options={{ title: 'Services' }} />
 			<Stack.Screen name="add-service" options={{ title: 'Add Service' }} />
