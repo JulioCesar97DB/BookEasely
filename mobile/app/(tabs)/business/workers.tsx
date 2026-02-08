@@ -96,31 +96,52 @@ export default function WorkersScreen() {
 					</View>
 				}
 				renderItem={({ item }) => (
-					<TouchableOpacity
-						style={styles.card}
-						onPress={() => router.push(`/(tabs)/business/add-worker?id=${item.id}` as never)}
-						activeOpacity={0.7}
-					>
-						<View style={styles.avatar}>
-							<Text style={styles.avatarText}>{item.display_name.charAt(0).toUpperCase()}</Text>
+					<View style={styles.card}>
+						<TouchableOpacity
+							style={styles.cardMain}
+							onPress={() => router.push(`/(tabs)/business/add-worker?id=${item.id}` as never)}
+							activeOpacity={0.7}
+						>
+							<View style={styles.avatar}>
+								<Text style={styles.avatarText}>{item.display_name.charAt(0).toUpperCase()}</Text>
+							</View>
+							<View style={styles.cardBody}>
+								<Text style={styles.cardName}>{item.display_name}</Text>
+								{item.bio && (
+									<Text style={styles.cardBio} numberOfLines={1}>{item.bio}</Text>
+								)}
+								{item.specialties && item.specialties.length > 0 && (
+									<View style={styles.specialtiesRow}>
+										{item.specialties.slice(0, 3).map((spec) => (
+											<View key={spec} style={styles.specBadge}>
+												<Text style={styles.specText}>{spec}</Text>
+											</View>
+										))}
+									</View>
+								)}
+							</View>
+							<View style={[styles.statusDot, item.is_active ? styles.statusActive : styles.statusInactive]} />
+						</TouchableOpacity>
+						<View style={styles.cardActions}>
+							<TouchableOpacity
+								style={styles.actionButton}
+								onPress={() => router.push(`/(tabs)/business/worker-availability?workerId=${item.id}&workerName=${encodeURIComponent(item.display_name)}` as never)}
+								activeOpacity={0.7}
+							>
+								<Ionicons name="time-outline" size={15} color={colors.primary} />
+								<Text style={styles.actionText}>Schedule</Text>
+							</TouchableOpacity>
+							<View style={styles.actionDivider} />
+							<TouchableOpacity
+								style={styles.actionButton}
+								onPress={() => router.push(`/(tabs)/business/worker-blocked-dates?workerId=${item.id}&workerName=${encodeURIComponent(item.display_name)}` as never)}
+								activeOpacity={0.7}
+							>
+								<Ionicons name="calendar-outline" size={15} color={colors.primary} />
+								<Text style={styles.actionText}>Time Off</Text>
+							</TouchableOpacity>
 						</View>
-						<View style={styles.cardBody}>
-							<Text style={styles.cardName}>{item.display_name}</Text>
-							{item.bio && (
-								<Text style={styles.cardBio} numberOfLines={1}>{item.bio}</Text>
-							)}
-							{item.specialties && item.specialties.length > 0 && (
-								<View style={styles.specialtiesRow}>
-									{item.specialties.slice(0, 3).map((spec) => (
-										<View key={spec} style={styles.specBadge}>
-											<Text style={styles.specText}>{spec}</Text>
-										</View>
-									))}
-								</View>
-							)}
-						</View>
-						<View style={[styles.statusDot, item.is_active ? styles.statusActive : styles.statusInactive]} />
-					</TouchableOpacity>
+					</View>
 				)}
 			/>
 		</View>
@@ -165,13 +186,16 @@ const styles = StyleSheet.create({
 	},
 	addSelfText: { fontSize: fontSize.sm, fontWeight: '500', color: colors.primary },
 	card: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		padding: spacing.lg,
 		backgroundColor: colors.surface,
 		borderRadius: radius.md,
 		borderWidth: 1,
 		borderColor: colors.border,
+		overflow: 'hidden',
+	},
+	cardMain: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		padding: spacing.lg,
 		gap: spacing.md,
 	},
 	avatar: {
@@ -198,4 +222,22 @@ const styles = StyleSheet.create({
 	statusDot: { width: 8, height: 8, borderRadius: 4 },
 	statusActive: { backgroundColor: '#30A46C' },
 	statusInactive: { backgroundColor: colors.border },
+	cardActions: {
+		flexDirection: 'row',
+		borderTopWidth: 1,
+		borderTopColor: colors.border,
+	},
+	actionButton: {
+		flex: 1,
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: spacing.xs,
+		paddingVertical: spacing.sm,
+	},
+	actionDivider: {
+		width: 1,
+		backgroundColor: colors.border,
+	},
+	actionText: { fontSize: fontSize.xs, fontWeight: '500', color: colors.primary },
 })

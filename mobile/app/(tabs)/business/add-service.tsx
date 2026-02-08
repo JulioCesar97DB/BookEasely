@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../../lib/auth-context'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
+import type { Worker } from '../../../lib/types'
 
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240]
 
@@ -28,6 +29,8 @@ export default function AddServiceScreen() {
 	const [loading, setLoading] = useState(isEdit)
 	const [saving, setSaving] = useState(false)
 	const [businessId, setBusinessId] = useState<string | null>(null)
+	const [workers, setWorkers] = useState<Pick<Worker, 'id' | 'display_name' | 'is_active'>[]>([])
+	const [selectedWorkerIds, setSelectedWorkerIds] = useState<Set<string>>(new Set())
 	const [form, setForm] = useState({
 		name: '',
 		description: '',
@@ -44,7 +47,18 @@ export default function AddServiceScreen() {
 				.select('id')
 				.eq('owner_id', user!.id)
 				.single()
-			if (biz) setBusinessId(biz.id)
+			if (biz) {
+				setBusinessId(biz.id)
+
+				// Load active workers for this business
+				const { data: workersData } = await supabase
+					.from('workers')
+					.select('id, display_name, is_active')
+					.eq('business_id', biz.id)
+					.eq('is_active', true)
+					.order('created_at')
+				setWorkers(workersData ?? [])
+			}
 
 			if (id) {
 				const { data } = await supabase.from('services').select('*').eq('id', id).single()
@@ -57,11 +71,32 @@ export default function AddServiceScreen() {
 						is_active: data.is_active,
 					})
 				}
+
+				// Load existing worker assignments
+				const { data: sw } = await supabase
+					.from('service_workers')
+					.select('worker_id')
+					.eq('service_id', id)
+				if (sw) {
+					setSelectedWorkerIds(new Set(sw.map((r) => r.worker_id)))
+				}
 			}
 			setLoading(false)
 		}
 		load()
 	}, [user, id])
+
+	function toggleWorker(workerId: string) {
+		setSelectedWorkerIds((prev) => {
+			const next = new Set(prev)
+			if (next.has(workerId)) {
+				next.delete(workerId)
+			} else {
+				next.add(workerId)
+			}
+			return next
+		})
+	}
 
 	async function handleSave() {
 		if (!form.name.trim()) {
@@ -84,16 +119,46 @@ export default function AddServiceScreen() {
 			is_active: form.is_active,
 		}
 
-		const { error } = isEdit
-			? await supabase.from('services').update(payload).eq('id', id)
-			: await supabase.from('services').insert({ ...payload, business_id: businessId })
+		let serviceId = id
+
+		if (isEdit) {
+			const { error } = await supabase.from('services').update(payload).eq('id', id)
+			if (error) {
+				setSaving(false)
+				Alert.alert('Error', error.message)
+				return
+			}
+		} else {
+			const { data, error } = await supabase
+				.from('services')
+				.insert({ ...payload, business_id: businessId })
+				.select('id')
+				.single()
+			if (error || !data) {
+				setSaving(false)
+				Alert.alert('Error', error?.message ?? 'Failed to create service')
+				return
+			}
+			serviceId = data.id
+		}
+
+		// Sync worker assignments
+		if (serviceId) {
+			// Delete existing assignments
+			await supabase.from('service_workers').delete().eq('service_id', serviceId)
+
+			// Insert new assignments
+			if (selectedWorkerIds.size > 0) {
+				const rows = Array.from(selectedWorkerIds).map((workerId) => ({
+					service_id: serviceId,
+					worker_id: workerId,
+				}))
+				await supabase.from('service_workers').insert(rows)
+			}
+		}
 
 		setSaving(false)
-		if (error) {
-			Alert.alert('Error', error.message)
-		} else {
-			router.back()
-		}
+		router.back()
 	}
 
 	if (loading) {
@@ -182,6 +247,33 @@ export default function AddServiceScreen() {
 					/>
 				</View>
 
+				{/* Worker Assignments */}
+				{workers.length > 0 && (
+					<View style={styles.workersSection}>
+						<Text style={styles.label}>Assigned Workers</Text>
+						<Text style={styles.toggleHint}>Select which workers can perform this service</Text>
+						<View style={styles.workersList}>
+							{workers.map((worker) => (
+								<TouchableOpacity
+									key={worker.id}
+									style={[styles.workerChip, selectedWorkerIds.has(worker.id) && styles.workerChipActive]}
+									onPress={() => toggleWorker(worker.id)}
+									activeOpacity={0.7}
+								>
+									<View style={[styles.checkbox, selectedWorkerIds.has(worker.id) && styles.checkboxActive]}>
+										{selectedWorkerIds.has(worker.id) && (
+											<Text style={styles.checkmark}>✓</Text>
+										)}
+									</View>
+									<Text style={[styles.workerName, selectedWorkerIds.has(worker.id) && styles.workerNameActive]}>
+										{worker.display_name}
+									</Text>
+								</TouchableOpacity>
+							))}
+						</View>
+					</View>
+				)}
+
 				<TouchableOpacity
 					style={[styles.button, saving && styles.buttonDisabled]}
 					onPress={handleSave}
@@ -242,6 +334,44 @@ const styles = StyleSheet.create({
 		marginBottom: spacing.lg,
 	},
 	toggleHint: { fontSize: fontSize.xs, color: colors.foregroundSecondary, marginTop: 2 },
+	workersSection: {
+		gap: spacing.sm,
+		marginBottom: spacing.lg,
+	},
+	workersList: {
+		gap: spacing.sm,
+		marginTop: spacing.sm,
+	},
+	workerChip: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: spacing.md,
+		padding: spacing.md,
+		borderWidth: 1,
+		borderColor: colors.border,
+		borderRadius: radius.md,
+		backgroundColor: colors.surface,
+	},
+	workerChipActive: {
+		borderColor: colors.primary,
+		backgroundColor: colors.primaryLight,
+	},
+	checkbox: {
+		width: 20,
+		height: 20,
+		borderRadius: 4,
+		borderWidth: 2,
+		borderColor: colors.border,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	checkboxActive: {
+		borderColor: colors.primary,
+		backgroundColor: colors.primary,
+	},
+	checkmark: { fontSize: 12, color: colors.white, fontWeight: '700' },
+	workerName: { fontSize: fontSize.sm, color: colors.foreground },
+	workerNameActive: { fontWeight: '500', color: colors.primary },
 	button: {
 		height: 48,
 		borderRadius: radius.md,

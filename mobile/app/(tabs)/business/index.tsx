@@ -20,6 +20,7 @@ const actions: QuickAction[] = [
 	{ label: 'Services', icon: 'clipboard-outline', route: '/(tabs)/business/services', color: '#30A46C' },
 	{ label: 'Team', icon: 'people-outline', route: '/(tabs)/business/workers', color: '#E5484D' },
 	{ label: 'Hours', icon: 'time-outline', route: '/(tabs)/business/hours', color: '#F76B15' },
+	{ label: 'Settings', icon: 'settings-outline', route: '/(tabs)/business/settings', color: '#6E56CF' },
 ]
 
 export default function BusinessDashboard() {
