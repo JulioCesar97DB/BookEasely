@@ -27,7 +27,7 @@ export default function BusinessDashboard() {
 	const { user } = useAuth()
 	const router = useRouter()
 	const [business, setBusiness] = useState<Business | null>(null)
-	const [stats, setStats] = useState({ services: 0, workers: 0 })
+	const [stats, setStats] = useState({ services: 0, workers: 0, today: 0, upcoming: 0 })
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
@@ -43,14 +43,21 @@ export default function BusinessDashboard() {
 			if (biz) {
 				setBusiness(biz)
 
-				const [servicesRes, workersRes] = await Promise.all([
+				const today = new Date().toISOString().split('T')[0]!
+				const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]!
+
+				const [servicesRes, workersRes, todayRes, upcomingRes] = await Promise.all([
 					supabase.from('services').select('id', { count: 'exact', head: true }).eq('business_id', biz.id),
 					supabase.from('workers').select('id', { count: 'exact', head: true }).eq('business_id', biz.id),
+					supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('business_id', biz.id).eq('date', today),
+					supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('business_id', biz.id).gte('date', today).lte('date', nextWeek),
 				])
 
 				setStats({
 					services: servicesRes.count ?? 0,
 					workers: workersRes.count ?? 0,
+					today: todayRes.count ?? 0,
+					upcoming: upcomingRes.count ?? 0,
 				})
 			}
 			setLoading(false)
@@ -120,8 +127,12 @@ export default function BusinessDashboard() {
 						<Text style={styles.statLabel}>Workers</Text>
 					</View>
 					<View style={styles.statCard}>
-						<Text style={styles.statNumber}>{business.rating_count}</Text>
-						<Text style={styles.statLabel}>Reviews</Text>
+						<Text style={styles.statNumber}>{stats.today}</Text>
+						<Text style={styles.statLabel}>Today</Text>
+					</View>
+					<View style={styles.statCard}>
+						<Text style={styles.statNumber}>{stats.upcoming}</Text>
+						<Text style={styles.statLabel}>Upcoming</Text>
 					</View>
 				</View>
 
