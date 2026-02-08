@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import type { Business, Category } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 interface BusinessWithCategory extends Business {
 	categories?: { name: string; slug: string } | null
@@ -178,12 +179,14 @@ function BusinessCard({ business }: { business: BusinessWithCategory }) {
 			href={`/business/${business.slug}`}
 			className="group overflow-hidden rounded-xl border bg-card transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
 		>
-			<div className="aspect-video bg-linear-to-br from-muted to-muted/50">
+			<div className="relative aspect-video bg-linear-to-br from-muted to-muted/50">
 				{business.cover_image_url ? (
-					<img
+					<Image
 						src={business.cover_image_url}
 						alt={business.name}
-						className="h-full w-full object-cover"
+						fill
+						sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+						className="object-cover"
 					/>
 				) : (
 					<div className="flex h-full items-center justify-center text-muted-foreground/30">
