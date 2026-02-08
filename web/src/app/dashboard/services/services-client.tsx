@@ -158,12 +158,12 @@ export function ServicesClient({ businessId, services, workers, serviceWorkers }
 	return (
 		<PageTransition>
 			<div>
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold tracking-tight">Services</h1>
 						<p className="text-muted-foreground">Manage the services your business offers.</p>
 					</div>
-					<Button onClick={openAdd} className="gap-2">
+					<Button onClick={openAdd} className="gap-2 w-full sm:w-auto">
 						<Plus className="h-4 w-4" />
 						Add Service
 					</Button>
@@ -188,70 +188,113 @@ export function ServicesClient({ businessId, services, workers, serviceWorkers }
 						</Button>
 					</motion.div>
 				) : (
-					<div className="rounded-xl border">
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Name</TableHead>
-									<TableHead>Price</TableHead>
-									<TableHead>Duration</TableHead>
-									<TableHead>Status</TableHead>
-									<TableHead className="w-24">Actions</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{services.map((service, index) => (
-									<motion.tr
-										key={service.id}
-										initial={{ opacity: 0 }}
-										animate={{ opacity: 1 }}
-										transition={{ delay: index * 0.05 }}
-										className="border-b transition-colors hover:bg-muted/50"
-									>
-										<TableCell>
-											<div>
+					<>
+						{/* Mobile: card layout */}
+						<div className="space-y-3 md:hidden">
+							{services.map((service, index) => (
+								<motion.div
+									key={service.id}
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									transition={{ delay: index * 0.05 }}
+								>
+									<div className="rounded-xl border p-4">
+										<div className="flex items-start justify-between gap-3">
+											<div className="min-w-0 flex-1">
 												<p className="font-medium">{service.name}</p>
 												{service.description && (
-													<p className="text-sm text-muted-foreground line-clamp-1">
+													<p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
 														{service.description}
 													</p>
 												)}
+												<div className="flex flex-wrap items-center gap-2 mt-2">
+													<span className="text-sm font-medium">${service.price.toFixed(2)}</span>
+													<span className="text-xs text-muted-foreground">{service.duration_minutes} min</span>
+													<Badge variant={service.is_active ? 'default' : 'secondary'} className="text-xs">
+														{service.is_active ? 'Active' : 'Inactive'}
+													</Badge>
+												</div>
 											</div>
-										</TableCell>
-										<TableCell className="font-medium">
-											${service.price.toFixed(2)}
-										</TableCell>
-										<TableCell>{service.duration_minutes} min</TableCell>
-										<TableCell>
-											<Badge variant={service.is_active ? 'default' : 'secondary'}>
-												{service.is_active ? 'Active' : 'Inactive'}
-											</Badge>
-										</TableCell>
-										<TableCell>
-											<div className="flex items-center gap-1">
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8"
-													onClick={() => openEdit(service)}
-												>
+											<div className="flex items-center gap-1 shrink-0">
+												<Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(service)}>
 													<Pencil className="h-4 w-4" />
 												</Button>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8 text-destructive hover:text-destructive"
-													onClick={() => setDeleteId(service.id)}
-												>
+												<Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(service.id)}>
 													<Trash2 className="h-4 w-4" />
 												</Button>
 											</div>
-										</TableCell>
-									</motion.tr>
-								))}
-							</TableBody>
-						</Table>
-					</div>
+										</div>
+									</div>
+								</motion.div>
+							))}
+						</div>
+
+						{/* Desktop: table layout */}
+						<div className="hidden md:block rounded-xl border overflow-hidden">
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Name</TableHead>
+										<TableHead>Price</TableHead>
+										<TableHead>Duration</TableHead>
+										<TableHead>Status</TableHead>
+										<TableHead className="w-24">Actions</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{services.map((service, index) => (
+										<motion.tr
+											key={service.id}
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											transition={{ delay: index * 0.05 }}
+											className="border-b transition-colors hover:bg-muted/50"
+										>
+											<TableCell>
+												<div>
+													<p className="font-medium">{service.name}</p>
+													{service.description && (
+														<p className="text-sm text-muted-foreground line-clamp-1">
+															{service.description}
+														</p>
+													)}
+												</div>
+											</TableCell>
+											<TableCell className="font-medium">
+												${service.price.toFixed(2)}
+											</TableCell>
+											<TableCell>{service.duration_minutes} min</TableCell>
+											<TableCell>
+												<Badge variant={service.is_active ? 'default' : 'secondary'}>
+													{service.is_active ? 'Active' : 'Inactive'}
+												</Badge>
+											</TableCell>
+											<TableCell>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8"
+														onClick={() => openEdit(service)}
+													>
+														<Pencil className="h-4 w-4" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 text-destructive hover:text-destructive"
+														onClick={() => setDeleteId(service.id)}
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</div>
+											</TableCell>
+										</motion.tr>
+									))}
+								</TableBody>
+							</Table>
+						</div>
+					</>
 				)}
 
 				{/* Add/Edit Sheet */}

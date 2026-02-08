@@ -90,7 +90,7 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 				</div>
 
 				{/* Navigation */}
-				<div className="mb-6 flex items-center justify-between">
+				<div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-center gap-2">
 						<Button variant="outline" size="icon" onClick={() => setWeekOffset((p) => p - 1)}>
 							<ChevronLeft className="h-4 w-4" />
@@ -101,8 +101,13 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 						<Button variant="outline" size="icon" onClick={() => setWeekOffset((p) => p + 1)}>
 							<ChevronRight className="h-4 w-4" />
 						</Button>
+						<p className="text-sm font-medium text-muted-foreground sm:hidden ml-2">
+							{startDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+							{' — '}
+							{endDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+						</p>
 					</div>
-					<p className="text-sm font-medium text-muted-foreground">
+					<p className="hidden sm:block text-sm font-medium text-muted-foreground">
 						{startDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
 						{' — '}
 						{endDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -143,7 +148,7 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 						animate={{ opacity: 1, x: 0 }}
 						transition={{ duration: 0.2 }}
 					>
-						<Card>
+						<Card className="overflow-hidden">
 							<CardContent className="p-0 overflow-x-auto">
 								<div className="min-w-175">
 									{/* Header row */}

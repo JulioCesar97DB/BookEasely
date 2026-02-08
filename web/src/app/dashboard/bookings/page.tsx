@@ -154,8 +154,8 @@ function BookingCard({
 
 	return (
 		<Card className={isPast ? 'opacity-60' : ''}>
-			<CardContent className="flex items-center gap-4 py-4">
-				<div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
+			<CardContent className="flex flex-wrap items-center gap-3 py-4 sm:gap-4">
+				<div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
 					<span className="text-xs font-medium leading-none">
 						{new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })}
 					</span>

@@ -196,19 +196,19 @@ export function WorkersClient({
 	return (
 		<PageTransition>
 			<div>
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold tracking-tight">Team</h1>
 						<p className="text-muted-foreground">Manage your workers and their availability.</p>
 					</div>
 					<div className="flex gap-2">
 						{!ownerIsWorker && (
-							<Button variant="outline" onClick={openAddSelf} className="gap-2">
+							<Button variant="outline" onClick={openAddSelf} className="gap-2 flex-1 sm:flex-initial">
 								<UserPlus className="h-4 w-4" />
 								Add Yourself
 							</Button>
 						)}
-						<Button onClick={openInvite} className="gap-2">
+						<Button onClick={openInvite} className="gap-2 flex-1 sm:flex-initial">
 							<Mail className="h-4 w-4" />
 							Invite Worker
 						</Button>
