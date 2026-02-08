@@ -124,7 +124,7 @@ export default function OnboardingPage() {
 	}
 
 	return (
-		<div className="flex min-h-svh items-center justify-center bg-gradient-to-br from-background via-background to-brand-muted/20 p-4">
+		<div className="flex min-h-svh items-center justify-center bg-linear-to-br from-background via-background to-brand-muted/20 p-4">
 			<div className="w-full max-w-lg">
 				{/* Logo */}
 				<div className="mb-8 flex items-center justify-center gap-2.5">
