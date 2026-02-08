@@ -103,18 +103,7 @@ export default function TabsLayout() {
 					),
 				}}
 			/>
-			<Tabs.Screen
-				name="edit-profile"
-				options={{
-					title: 'Edit Profile',
-					headerShown: true,
-					headerStyle: { backgroundColor: colors.background },
-					headerTintColor: colors.foreground,
-					headerTitleStyle: { fontWeight: '600' },
-					headerShadowVisible: false,
-					href: null,
-				}}
-			/>
+
 		</Tabs>
 	)
 }

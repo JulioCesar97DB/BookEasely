@@ -12,9 +12,9 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native'
-import { useAuth } from '../../lib/auth-context'
-import { supabase } from '../../lib/supabase'
-import { colors, fontSize, radius, spacing } from '../../lib/theme'
+import { useAuth } from '../../../lib/auth-context'
+import { supabase } from '../../../lib/supabase'
+import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 
 export default function EditProfileScreen() {
 	const { user, profile } = useAuth()

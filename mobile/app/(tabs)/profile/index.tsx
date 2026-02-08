@@ -1,12 +1,12 @@
-import { AnimatedScreen } from '../../components/animated-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useAuth } from '../../lib/auth-context'
-import { supabase } from '../../lib/supabase'
-import { colors, fontSize, radius, spacing } from '../../lib/theme'
+import { AnimatedScreen } from '../../../components/animated-screen'
+import { useAuth } from '../../../lib/auth-context'
+import { supabase } from '../../../lib/supabase'
+import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 
 export default function ProfileScreen() {
 	const { user, profile, signOut } = useAuth()
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
 					<MenuItem
 						icon="person-outline"
 						label="Edit Profile"
-						onPress={() => router.push('/(tabs)/edit-profile' as never)}
+						onPress={() => router.push('/(tabs)/profile/edit' as never)}
 					/>
 					{profile?.role === 'business_owner' && (
 						<MenuItem
