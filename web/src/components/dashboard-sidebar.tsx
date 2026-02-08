@@ -56,6 +56,7 @@ export const businessNav: NavItem[] = [
 	{ label: 'Workers', href: '/dashboard/workers', icon: Users },
 	{ label: 'Reviews', href: '/dashboard/reviews', icon: Star },
 	{ label: 'Business', href: '/dashboard/business', icon: Store },
+	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
 
 export function getNavForRole(role: UserRole, isWorker?: boolean): NavItem[] {

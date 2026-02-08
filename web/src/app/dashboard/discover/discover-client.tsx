@@ -1,7 +1,6 @@
 'use client'
 
 import { BusinessImageCarousel } from '@/components/business-image-carousel'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
@@ -208,48 +207,49 @@ export function DiscoverClient({
 }
 
 function DiscoverCard({ business }: { business: BusinessWithCategory }) {
+	const images = business.photos?.length
+		? business.photos
+		: business.cover_image_url
+			? [business.cover_image_url]
+			: []
+
 	return (
 		<Link
 			href={`/business/${business.slug}`}
-			className="group flex gap-4 rounded-xl border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-md hover:shadow-primary/5"
+			className="group overflow-hidden rounded-xl border bg-card transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
 		>
-			{/* Thumbnail */}
-			<div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-				<BusinessImageCarousel
-					images={business.photos?.length ? business.photos : (business.cover_image_url ? [business.cover_image_url] : [])}
-					alt={business.name}
-					aspectRatio="square"
-					sizes="80px"
-				/>
-			</div>
+			<BusinessImageCarousel
+				images={images}
+				alt={business.name}
+				aspectRatio="video"
+				sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+			/>
 
-			{/* Info */}
-			<div className="min-w-0 flex-1">
+			<div className="p-4">
 				<div className="flex items-start justify-between gap-2">
-					<h3 className="truncate font-semibold group-hover:text-primary transition-colors">
-						{business.name}
-					</h3>
+					<div className="min-w-0 flex-1">
+						<h3 className="truncate font-semibold group-hover:text-primary transition-colors">
+							{business.name}
+						</h3>
+						{business.categories?.name && (
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								{business.categories.name}
+							</p>
+						)}
+					</div>
 					{business.rating_count > 0 && (
-						<div className="flex shrink-0 items-center gap-1">
+						<div className="flex shrink-0 items-center gap-1 rounded-md bg-primary/5 px-2 py-1">
 							<Star className="h-3.5 w-3.5 fill-primary text-primary" />
-							<span className="text-sm font-medium">
+							<span className="text-sm font-semibold text-primary">
 								{Number(business.rating_avg).toFixed(1)}
 							</span>
 						</div>
 					)}
 				</div>
 
-				<div className="mt-1 flex items-center gap-2">
-					{business.categories?.name && (
-						<Badge variant="secondary" className="text-xs font-normal">
-							{business.categories.name}
-						</Badge>
-					)}
-				</div>
-
 				{(business.city || business.state) && (
-					<p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-						<MapPin className="h-3 w-3" />
+					<p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+						<MapPin className="h-3.5 w-3.5" />
 						{[business.city, business.state].filter(Boolean).join(', ')}
 					</p>
 				)}
