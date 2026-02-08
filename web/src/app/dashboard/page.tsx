@@ -2,19 +2,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
 import type { UserRole } from '@/lib/types'
 import { Calendar, Clock, Star, TrendingUp } from 'lucide-react'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
 	const supabase = await createClient()
 	const { data: { user } } = await supabase.auth.getUser()
 
+	if (!user) {
+		redirect('/auth/login')
+	}
+
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select('full_name, role')
-		.eq('id', user!.id)
+		.eq('id', user.id)
 		.single()
 
-	const role = (profile?.role ?? user!.user_metadata?.role ?? 'client') as UserRole
-	const firstName = (profile?.full_name || user!.user_metadata?.full_name || '').split(' ')[0] || 'there'
+	const role = (profile?.role ?? user.user_metadata?.role ?? 'client') as UserRole
+	const firstName = (profile?.full_name || user.user_metadata?.full_name || '').split(' ')[0] || 'there'
 
 	return (
 		<div className="space-y-8">

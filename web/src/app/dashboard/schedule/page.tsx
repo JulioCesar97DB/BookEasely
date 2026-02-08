@@ -1,16 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { ScheduleClient } from './schedule-client'
 
 export default async function SchedulePage() {
 	const supabase = await createClient()
-
-	// User is guaranteed to be authenticated by proxy.ts
 	const { data: { user } } = await supabase.auth.getUser()
+
+	if (!user) {
+		redirect('/auth/login')
+	}
 
 	const { data: business } = await supabase
 		.from('businesses')
 		.select('id')
-		.eq('owner_id', user!.id)
+		.eq('owner_id', user.id)
 		.single()
 
 	if (!business) {
