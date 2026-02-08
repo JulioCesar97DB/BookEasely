@@ -10,10 +10,16 @@ import { useEffect, useState } from 'react'
 interface Props {
 	images: string[]
 	alt: string
-	aspectRatio?: 'video' | 'square'
+	aspectRatio?: 'video' | 'square' | 'compact'
 	sizes?: string
 	className?: string
 }
+
+const aspectClasses = {
+	video: 'aspect-video',
+	square: 'aspect-square',
+	compact: 'aspect-[2/1]',
+} as const
 
 export function BusinessImageCarousel({
 	images,
@@ -44,7 +50,7 @@ export function BusinessImageCarousel({
 			<div
 				className={cn(
 					'relative bg-linear-to-br from-muted to-muted/50',
-					aspectRatio === 'video' ? 'aspect-video' : 'aspect-square',
+					aspectClasses[aspectRatio],
 					className,
 				)}
 			>
@@ -61,7 +67,7 @@ export function BusinessImageCarousel({
 			<div
 				className={cn(
 					'relative bg-muted',
-					aspectRatio === 'video' ? 'aspect-video' : 'aspect-square',
+					aspectClasses[aspectRatio],
 					className,
 				)}
 			>
@@ -86,7 +92,7 @@ export function BusinessImageCarousel({
 							<div
 								className={cn(
 									'relative bg-muted',
-									aspectRatio === 'video' ? 'aspect-video' : 'aspect-square',
+									aspectClasses[aspectRatio],
 								)}
 							>
 								<Image

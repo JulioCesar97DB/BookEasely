@@ -41,6 +41,10 @@ export interface Business {
 	cover_image_url: string | null
 	logo_url: string | null
 	photos: string[]
+	cancellation_policy: string | null
+	cancellation_hours: number
+	auto_confirm: boolean
+	buffer_minutes: number
 	rating_avg: number
 	rating_count: number
 	is_active: boolean
@@ -117,6 +121,10 @@ export interface Booking {
 	note: string | null
 	created_at: string
 	updated_at: string
+}
+
+export interface BusinessWithCategory extends Business {
+	categories?: { name: string; slug: string } | null
 }
 
 export interface WorkerInvitation {

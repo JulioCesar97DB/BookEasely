@@ -151,6 +151,10 @@ export interface Notification {
 	created_at: string
 }
 
+export interface BusinessWithCategory extends Business {
+	categories?: { name: string; slug: string } | null
+}
+
 export interface Favorite {
 	id: string
 	client_id: string
