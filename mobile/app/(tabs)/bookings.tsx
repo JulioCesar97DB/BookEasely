@@ -1,21 +1,40 @@
 import { Ionicons } from '@expo/vector-icons'
-import { StyleSheet, Text, View } from 'react-native'
+import { Link } from 'expo-router'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, fontSize, spacing } from '../../lib/theme'
+import { useAuth } from '../../lib/auth-context'
+import { colors, fontSize, radius, spacing } from '../../lib/theme'
 
 export default function BookingsScreen() {
+	const { user } = useAuth()
+
 	return (
 		<SafeAreaView style={styles.container} edges={['top']}>
 			<View style={styles.header}>
 				<Text style={styles.title}>My Bookings</Text>
 			</View>
-			<View style={styles.emptyState}>
-				<Ionicons name="calendar-outline" size={48} color={colors.border} />
-				<Text style={styles.emptyTitle}>No bookings yet</Text>
-				<Text style={styles.emptySubtitle}>
-					Your upcoming and past bookings will appear here
-				</Text>
-			</View>
+			{!user ? (
+				<View style={styles.emptyState}>
+					<Ionicons name="calendar-outline" size={48} color={colors.border} />
+					<Text style={styles.emptyTitle}>Sign in to see your bookings</Text>
+					<Text style={styles.emptySubtitle}>
+						Track your upcoming and past appointments
+					</Text>
+					<Link href="/(auth)/login" asChild>
+						<TouchableOpacity style={styles.signInBtn} activeOpacity={0.8}>
+							<Text style={styles.signInBtnText}>Sign in</Text>
+						</TouchableOpacity>
+					</Link>
+				</View>
+			) : (
+				<View style={styles.emptyState}>
+					<Ionicons name="calendar-outline" size={48} color={colors.border} />
+					<Text style={styles.emptyTitle}>No bookings yet</Text>
+					<Text style={styles.emptySubtitle}>
+						Your upcoming and past bookings will appear here
+					</Text>
+				</View>
+			)}
 		</SafeAreaView>
 	)
 }
@@ -53,5 +72,17 @@ const styles = StyleSheet.create({
 		color: colors.foregroundSecondary,
 		textAlign: 'center',
 		paddingHorizontal: spacing['4xl'],
+	},
+	signInBtn: {
+		marginTop: spacing.md,
+		paddingHorizontal: spacing['2xl'],
+		paddingVertical: spacing.md,
+		borderRadius: radius.md,
+		backgroundColor: colors.primary,
+	},
+	signInBtnText: {
+		fontSize: fontSize.sm,
+		fontWeight: '600',
+		color: colors.white,
 	},
 })

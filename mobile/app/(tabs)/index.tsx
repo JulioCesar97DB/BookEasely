@@ -55,13 +55,21 @@ interface BusinessWithCategory extends Business {
 	categories?: { name: string; slug: string } | null
 }
 
+const defaultPopular: BusinessWithCategory[] = [
+	{ id: 'p1', owner_id: '', name: "The Gentleman's Cut", slug: 'the-gentlemans-cut', description: null, category_id: '1', address: '', city: 'Downtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.9, rating_count: 127, is_active: true, created_at: '', updated_at: '', categories: { name: 'Barbershop', slug: 'barbershop' } },
+	{ id: 'p2', owner_id: '', name: 'Serenity Spa', slug: 'serenity-spa', description: null, category_id: '4', address: '', city: 'Midtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.8, rating_count: 89, is_active: true, created_at: '', updated_at: '', categories: { name: 'Spa & Massage', slug: 'spa-massage' } },
+	{ id: 'p3', owner_id: '', name: 'FitZone Studio', slug: 'fitzone-studio', description: null, category_id: '5', address: '', city: 'West Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.7, rating_count: 203, is_active: true, created_at: '', updated_at: '', categories: { name: 'Fitness', slug: 'fitness-training' } },
+	{ id: 'p4', owner_id: '', name: 'Pawfect Grooming', slug: 'pawfect-grooming', description: null, category_id: '8', address: '', city: 'East Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.9, rating_count: 64, is_active: true, created_at: '', updated_at: '', categories: { name: 'Pet Services', slug: 'pet-services' } },
+	{ id: 'p5', owner_id: '', name: 'Glow Beauty Bar', slug: 'glow-beauty-bar', description: null, category_id: '7', address: '', city: 'Uptown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.6, rating_count: 152, is_active: true, created_at: '', updated_at: '', categories: { name: 'Beauty', slug: 'beauty-aesthetics' } },
+]
+
 export default function DiscoverScreen() {
 	const { user } = useAuth()
 	const [searchQuery, setSearchQuery] = useState('')
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 	const [categories, setCategories] = useState<Category[]>(defaultCategories)
 	const [businesses, setBusinesses] = useState<BusinessWithCategory[]>([])
-	const [popularBusinesses, setPopularBusinesses] = useState<BusinessWithCategory[]>([])
+	const [popularBusinesses, setPopularBusinesses] = useState<BusinessWithCategory[]>(defaultPopular)
 	const [isLoading, setIsLoading] = useState(true)
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 	const hasActiveFilters = !!selectedCategory || !!searchQuery.trim()
@@ -80,7 +88,9 @@ export default function DiscoverScreen() {
 			if (catResult.data && catResult.data.length > 0) {
 				setCategories(catResult.data)
 			}
-			setPopularBusinesses(popResult.data ?? [])
+			if (popResult.data && popResult.data.length > 0) {
+				setPopularBusinesses(popResult.data)
+			}
 		}
 		loadInitialData()
 	}, [])

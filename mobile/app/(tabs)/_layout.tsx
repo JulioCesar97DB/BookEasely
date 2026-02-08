@@ -42,7 +42,6 @@ export default function TabsLayout() {
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="calendar-outline" size={size} color={color} />
 					),
-					href: user ? '/(tabs)/bookings' : null,
 				}}
 			/>
 			<Tabs.Screen
@@ -52,7 +51,7 @@ export default function TabsLayout() {
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="heart-outline" size={size} color={color} />
 					),
-					href: user && !isBusinessOwner ? '/(tabs)/favorites' : null,
+					href: isBusinessOwner ? null : '/(tabs)/favorites',
 				}}
 			/>
 			<Tabs.Screen
@@ -72,7 +71,6 @@ export default function TabsLayout() {
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="person-outline" size={size} color={color} />
 					),
-					href: user ? '/(tabs)/profile' : null,
 				}}
 			/>
 		</Tabs>
