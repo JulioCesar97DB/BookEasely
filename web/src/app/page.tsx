@@ -49,7 +49,7 @@ export default function HomePage() {
 
 			{/* Hero Section */}
 			<section className="relative overflow-hidden border-b">
-				<div className="absolute inset-0 bg-linear-to-br from-primary/[0.03] via-transparent to-brand-muted/30" />
+				<div className="absolute inset-0 bg-linear-to-br from-primary/3 via-transparent to-brand-muted/30" />
 				<div className="absolute top-0 right-0 -z-10 h-125 w-125 rounded-full bg-primary/5 blur-3xl" />
 				<div className="absolute bottom-0 left-0 -z-10 h-100 w-100 rounded-full bg-brand-muted/40 blur-3xl" />
 
@@ -137,7 +137,7 @@ export default function HomePage() {
 								className="group overflow-hidden rounded-xl border bg-card transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
 							>
 								{/* Image placeholder */}
-								<div className="aspect-[16/9] bg-linear-to-br from-muted to-muted/50">
+								<div className="aspect-video bg-linear-to-br from-muted to-muted/50">
 									<div className="flex h-full items-center justify-center text-muted-foreground/30">
 										<Search className="h-8 w-8" />
 									</div>
