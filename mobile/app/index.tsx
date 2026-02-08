@@ -20,10 +20,11 @@ export default function Index() {
 	}
 
 	// Logged in but onboarding not complete
-	if (profile && !profile.onboarding_completed) {
+	// profile is always defined for logged-in users (auth-context builds fallback)
+	if (!profile?.onboarding_completed) {
 		return <Redirect href="/onboarding" />
 	}
 
-	// Logged in → tabs
+	// Logged in + onboarding complete → tabs
 	return <Redirect href="/(tabs)" />
 }

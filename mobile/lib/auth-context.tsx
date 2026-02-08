@@ -1,7 +1,7 @@
 import { Session, User } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import type { Profile } from './types'
+import type { Profile, UserRole } from './types'
 
 interface AuthState {
 	session: Session | null
@@ -20,6 +20,21 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+function buildFallbackProfile(user: User): Profile {
+	const meta = user.user_metadata ?? {}
+	return {
+		id: user.id,
+		email: user.email ?? '',
+		full_name: meta.full_name ?? '',
+		phone: meta.phone ?? '',
+		role: (meta.role ?? 'client') as UserRole,
+		avatar_url: null,
+		onboarding_completed: false,
+		created_at: user.created_at,
+		updated_at: user.created_at,
+	}
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [state, setState] = useState<AuthState>({
 		session: null,
@@ -28,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		isLoading: true,
 	})
 
-	async function fetchProfile(userId: string) {
+	async function fetchProfile(userId: string): Promise<Profile | null> {
 		const { data } = await supabase
 			.from('profiles')
 			.select('*')
@@ -37,15 +52,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		return data as Profile | null
 	}
 
+	async function getProfileWithFallback(user: User): Promise<Profile> {
+		const dbProfile = await fetchProfile(user.id)
+		if (dbProfile) {
+			// Merge: use DB values but fall back to metadata for missing fields
+			return {
+				...dbProfile,
+				role: dbProfile.role || (user.user_metadata?.role as UserRole) || 'client',
+				full_name: dbProfile.full_name || user.user_metadata?.full_name || '',
+			}
+		}
+		// No profile row exists — build from auth metadata
+		return buildFallbackProfile(user)
+	}
+
 	async function refreshProfile() {
 		if (!state.user) return
-		const profile = await fetchProfile(state.user.id)
+		const profile = await getProfileWithFallback(state.user)
 		setState((prev) => ({ ...prev, profile }))
 	}
 
 	useEffect(() => {
 		supabase.auth.getSession().then(async ({ data: { session } }) => {
-			const profile = session ? await fetchProfile(session.user.id) : null
+			const profile = session ? await getProfileWithFallback(session.user) : null
 			setState({
 				session,
 				user: session?.user ?? null,
@@ -56,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 		const { data: { subscription } } = supabase.auth.onAuthStateChange(
 			async (_event, session) => {
-				const profile = session ? await fetchProfile(session.user.id) : null
+				const profile = session ? await getProfileWithFallback(session.user) : null
 				setState({
 					session,
 					user: session?.user ?? null,

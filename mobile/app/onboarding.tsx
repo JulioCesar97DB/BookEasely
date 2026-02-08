@@ -18,15 +18,22 @@ import { colors, fontSize, radius, spacing } from '../lib/theme'
 
 export default function OnboardingScreen() {
 	const { user, profile, refreshProfile } = useAuth()
-	const isBusinessOwner = profile?.role === 'business_owner'
+
+	// Use profile role with fallback to user metadata
+	const isBusinessOwner = profile?.role === 'business_owner' ||
+		user?.user_metadata?.role === 'business_owner'
 
 	const [step, setStep] = useState(0)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
-	// Profile fields
-	const [fullName, setFullName] = useState(profile?.full_name || '')
-	const [phone, setPhone] = useState(profile?.phone || '')
+	// Profile fields — pre-fill from profile or metadata
+	const [fullName, setFullName] = useState(
+		profile?.full_name || user?.user_metadata?.full_name || ''
+	)
+	const [phone, setPhone] = useState(
+		profile?.phone || user?.user_metadata?.phone || ''
+	)
 
 	// Business fields
 	const [businessName, setBusinessName] = useState('')
@@ -43,14 +50,17 @@ export default function OnboardingScreen() {
 		setIsLoading(true)
 		setError(null)
 
+		// Upsert profile — works whether or not the DB trigger created the row
 		const { error: err } = await supabase
 			.from('profiles')
-			.update({
+			.upsert({
+				id: user!.id,
+				email: user!.email,
 				full_name: fullName.trim(),
 				phone: phone.trim(),
+				role: profile?.role || user?.user_metadata?.role || 'client',
 				onboarding_completed: !isBusinessOwner,
-			})
-			.eq('id', user!.id)
+			}, { onConflict: 'id' })
 
 		if (err) {
 			setError(err.message)
@@ -98,10 +108,17 @@ export default function OnboardingScreen() {
 			return
 		}
 
+		// Mark onboarding complete
 		await supabase
 			.from('profiles')
-			.update({ onboarding_completed: true })
-			.eq('id', user!.id)
+			.upsert({
+				id: user!.id,
+				email: user!.email,
+				full_name: fullName.trim(),
+				phone: phone.trim(),
+				role: 'business_owner',
+				onboarding_completed: true,
+			}, { onConflict: 'id' })
 
 		await refreshProfile()
 		router.replace('/(tabs)')

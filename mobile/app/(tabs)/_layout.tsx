@@ -5,7 +5,8 @@ import { colors } from '../../lib/theme'
 
 export default function TabsLayout() {
 	const { user, profile } = useAuth()
-	const isBusinessOwner = profile?.role === 'business_owner'
+	const isBusinessOwner = profile?.role === 'business_owner' ||
+		user?.user_metadata?.role === 'business_owner'
 
 	return (
 		<Tabs
