@@ -79,8 +79,8 @@ export default function HomePage() {
 									className="h-12 pl-10 text-base"
 								/>
 							</div>
-							<Button size="lg" className="h-12 px-8 text-base">
-								Search
+							<Button size="lg" className="h-12 px-8 text-base" asChild>
+								<Link href="/search">Search</Link>
 							</Button>
 						</div>
 					</div>
@@ -94,9 +94,11 @@ export default function HomePage() {
 						<h2 className="text-2xl font-bold tracking-tight">Browse by category</h2>
 						<p className="mt-1 text-sm text-muted-foreground">Find the right service for you</p>
 					</div>
-					<Button variant="ghost" size="sm" className="text-primary">
-						View all
-						<ArrowRight className="ml-1 h-4 w-4" />
+					<Button variant="ghost" size="sm" className="text-primary" asChild>
+						<Link href="/search">
+							View all
+							<ArrowRight className="ml-1 h-4 w-4" />
+						</Link>
 					</Button>
 				</div>
 
@@ -124,9 +126,11 @@ export default function HomePage() {
 							<h2 className="text-2xl font-bold tracking-tight">Popular near you</h2>
 							<p className="mt-1 text-sm text-muted-foreground">Top-rated businesses in your area</p>
 						</div>
-						<Button variant="ghost" size="sm" className="text-primary">
-							See all
-							<ArrowRight className="ml-1 h-4 w-4" />
+						<Button variant="ghost" size="sm" className="text-primary" asChild>
+							<Link href="/search">
+								See all
+								<ArrowRight className="ml-1 h-4 w-4" />
+							</Link>
 						</Button>
 					</div>
 
