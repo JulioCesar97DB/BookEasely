@@ -21,11 +21,13 @@ export default async function DashboardLayout({
 		.eq('id', user.id)
 		.single()
 
-	const role = (profile?.role ?? 'client') as UserRole
-	const userName = profile?.full_name || user.email || 'User'
+	// Use profile role if available, otherwise fall back to auth metadata
+	const role = (profile?.role ?? user.user_metadata?.role ?? 'client') as UserRole
+	const userName = profile?.full_name || user.user_metadata?.full_name || user.email || 'User'
 
 	// Redirect to onboarding if not completed
-	if (profile && !profile.onboarding_completed) {
+	// Check both: profile exists but not completed, OR profile doesn't exist yet
+	if (!profile || !profile.onboarding_completed) {
 		redirect('/onboarding')
 	}
 

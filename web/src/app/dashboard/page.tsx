@@ -13,8 +13,8 @@ export default async function DashboardPage() {
 		.eq('id', user!.id)
 		.single()
 
-	const role = (profile?.role ?? 'client') as UserRole
-	const firstName = profile?.full_name?.split(' ')[0] || 'there'
+	const role = (profile?.role ?? user!.user_metadata?.role ?? 'client') as UserRole
+	const firstName = (profile?.full_name || user!.user_metadata?.full_name || '').split(' ')[0] || 'there'
 
 	return (
 		<div className="space-y-8">

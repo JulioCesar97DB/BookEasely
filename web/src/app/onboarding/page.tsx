@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, CalendarCheck, Loader2, MapPin, Phone, Store, User } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function OnboardingPage() {
 	const router = useRouter()
@@ -16,6 +16,7 @@ export default function OnboardingPage() {
 
 	const [step, setStep] = useState(0)
 	const [isLoading, setIsLoading] = useState(false)
+	const [initialLoading, setInitialLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
 	// Profile fields
@@ -30,25 +31,33 @@ export default function OnboardingPage() {
 	const [businessState, setBusinessState] = useState('')
 	const [businessZip, setBusinessZip] = useState('')
 
-	async function loadCurrentProfile() {
-		const { data: { user } } = await supabase.auth.getUser()
-		if (!user) return
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('full_name, phone, role')
-			.eq('id', user.id)
-			.single()
-		if (profile) {
-			setFullName(profile.full_name || '')
-			setPhone(profile.phone || '')
-			setRole(profile.role)
-		}
-	}
+	useEffect(() => {
+		async function loadCurrentProfile() {
+			const { data: { user } } = await supabase.auth.getUser()
+			if (!user) return
 
-	// Load profile on mount
-	useState(() => {
+			// Try loading from profiles table first
+			const { data: profile } = await supabase
+				.from('profiles')
+				.select('full_name, phone, role')
+				.eq('id', user.id)
+				.single()
+
+			if (profile) {
+				setFullName(profile.full_name || user.user_metadata?.full_name || '')
+				setPhone(profile.phone || user.user_metadata?.phone || '')
+				setRole(profile.role || user.user_metadata?.role || 'client')
+			} else {
+				// Profile doesn't exist yet (migration not run / trigger didn't fire)
+				// Fall back to auth metadata from signup
+				setFullName(user.user_metadata?.full_name || '')
+				setPhone(user.user_metadata?.phone || '')
+				setRole(user.user_metadata?.role || 'client')
+			}
+			setInitialLoading(false)
+		}
 		loadCurrentProfile()
-	})
+	}, [supabase])
 
 	async function handleCompleteProfile() {
 		setIsLoading(true)
@@ -57,15 +66,17 @@ export default function OnboardingPage() {
 		const { data: { user } } = await supabase.auth.getUser()
 		if (!user) return
 
-		// Update profile
+		// Upsert profile — works whether or not the trigger created the row
 		const { error: profileError } = await supabase
 			.from('profiles')
-			.update({
+			.upsert({
+				id: user.id,
+				email: user.email,
 				full_name: fullName,
 				phone,
+				role: role || 'client',
 				onboarding_completed: role === 'client',
-			})
-			.eq('id', user.id)
+			}, { onConflict: 'id' })
 
 		if (profileError) {
 			setError(profileError.message)
@@ -117,10 +128,24 @@ export default function OnboardingPage() {
 		// Mark onboarding complete
 		await supabase
 			.from('profiles')
-			.update({ onboarding_completed: true })
-			.eq('id', user.id)
+			.upsert({
+				id: user.id,
+				email: user.email,
+				full_name: fullName,
+				phone,
+				role: 'business_owner',
+				onboarding_completed: true,
+			}, { onConflict: 'id' })
 
 		router.push('/dashboard')
+	}
+
+	if (initialLoading) {
+		return (
+			<div className="flex min-h-svh items-center justify-center">
+				<Loader2 className="h-8 w-8 animate-spin text-primary" />
+			</div>
+		)
 	}
 
 	return (
