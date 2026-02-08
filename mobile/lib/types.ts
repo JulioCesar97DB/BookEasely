@@ -58,6 +58,51 @@ export interface Service {
 	created_at: string
 }
 
+export interface BusinessHours {
+	id: string
+	business_id: string
+	day_of_week: number
+	open_time: string
+	close_time: string
+	is_closed: boolean
+}
+
+export interface Worker {
+	id: string
+	user_id: string
+	business_id: string
+	display_name: string
+	bio: string | null
+	avatar_url: string | null
+	specialties: string[] | null
+	is_active: boolean
+	created_at: string
+}
+
+export interface WorkerAvailability {
+	id: string
+	worker_id: string
+	day_of_week: number
+	start_time: string
+	end_time: string
+	is_active: boolean
+}
+
+export interface WorkerBlockedDate {
+	id: string
+	worker_id: string
+	date: string
+	start_time: string | null
+	end_time: string | null
+	reason: string | null
+}
+
+export interface ServiceWorker {
+	id: string
+	service_id: string
+	worker_id: string
+}
+
 export interface Booking {
 	id: string
 	client_id: string

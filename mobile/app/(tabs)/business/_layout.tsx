@@ -1,0 +1,24 @@
+import { Stack } from 'expo-router'
+import { colors } from '../../../lib/theme'
+
+export default function BusinessLayout() {
+	return (
+		<Stack
+			screenOptions={{
+				headerStyle: { backgroundColor: colors.background },
+				headerTintColor: colors.foreground,
+				headerTitleStyle: { fontWeight: '600' },
+				headerShadowVisible: false,
+				contentStyle: { backgroundColor: colors.background },
+			}}
+		>
+			<Stack.Screen name="index" options={{ headerShown: false }} />
+			<Stack.Screen name="profile" options={{ title: 'Edit Profile' }} />
+			<Stack.Screen name="services" options={{ title: 'Services' }} />
+			<Stack.Screen name="add-service" options={{ title: 'Add Service' }} />
+			<Stack.Screen name="workers" options={{ title: 'Team' }} />
+			<Stack.Screen name="add-worker" options={{ title: 'Add Worker' }} />
+			<Stack.Screen name="hours" options={{ title: 'Business Hours' }} />
+		</Stack>
+	)
+}
