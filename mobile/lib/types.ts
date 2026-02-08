@@ -117,3 +117,16 @@ export interface Booking {
 	created_at: string
 	updated_at: string
 }
+
+export interface WorkerInvitation {
+	id: string
+	business_id: string
+	email: string
+	display_name: string
+	bio: string | null
+	specialties: string[] | null
+	invited_by: string
+	status: 'pending' | 'accepted' | 'declined' | 'expired'
+	created_at: string
+	accepted_at: string | null
+}

@@ -27,38 +27,34 @@ export default async function WorkersPage() {
 		)
 	}
 
-	const { data: workers } = await supabase
-		.from('workers')
-		.select('*')
-		.eq('business_id', business.id)
-		.order('created_at')
-
-	const { data: availability } = await supabase
-		.from('worker_availability')
-		.select('*')
-
-	const { data: blockedDates } = await supabase
-		.from('worker_blocked_dates')
-		.select('*')
-		.order('date')
+	const [
+		{ data: workers },
+		{ data: availability },
+		{ data: blockedDates },
+		{ data: pendingInvitations },
+		{ data: serviceWorkers },
+		{ data: profile },
+	] = await Promise.all([
+		supabase.from('workers').select('*').eq('business_id', business.id).order('created_at'),
+		supabase.from('worker_availability').select('*'),
+		supabase.from('worker_blocked_dates').select('*').order('date'),
+		supabase.from('worker_invitations').select('*').eq('business_id', business.id).eq('status', 'pending').order('created_at'),
+		supabase.from('service_workers').select('*'),
+		supabase.from('profiles').select('full_name').eq('id', user.id).single(),
+	])
 
 	// Check if owner is already a worker
 	const ownerIsWorker = workers?.some((w) => w.user_id === user.id) ?? false
 
-	const { data: profile } = await supabase
-		.from('profiles')
-		.select('full_name')
-		.eq('id', user.id)
-		.single()
-
 	return (
 		<WorkersClient
 			businessId={business.id}
-			userId={user.id}
 			userName={profile?.full_name ?? ''}
 			workers={workers ?? []}
 			availability={availability ?? []}
 			blockedDates={blockedDates ?? []}
+			serviceWorkers={serviceWorkers ?? []}
+			pendingInvitations={pendingInvitations ?? []}
 			ownerIsWorker={ownerIsWorker}
 		/>
 	)

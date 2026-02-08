@@ -17,7 +17,7 @@ export default function BusinessLayout() {
 			<Stack.Screen name="services" options={{ title: 'Services' }} />
 			<Stack.Screen name="add-service" options={{ title: 'Add Service' }} />
 			<Stack.Screen name="workers" options={{ title: 'Team' }} />
-			<Stack.Screen name="add-worker" options={{ title: 'Add Worker' }} />
+			<Stack.Screen name="add-worker" options={{ title: 'Invite Worker' }} />
 			<Stack.Screen name="hours" options={{ title: 'Business Hours' }} />
 			<Stack.Screen name="worker-availability" options={{ title: 'Worker Schedule' }} />
 			<Stack.Screen name="worker-blocked-dates" options={{ title: 'Time Off' }} />

@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
@@ -7,7 +7,6 @@ import {
 	Platform,
 	ScrollView,
 	StyleSheet,
-	Switch,
 	Text,
 	TextInput,
 	TouchableOpacity,
@@ -17,75 +16,135 @@ import { useAuth } from '../../../lib/auth-context'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 
-export default function AddWorkerScreen() {
+export default function InviteWorkerScreen() {
 	const { user } = useAuth()
 	const router = useRouter()
-	const { id } = useLocalSearchParams<{ id?: string }>()
-	const isEdit = !!id
+	const { businessId } = useLocalSearchParams<{ businessId: string }>()
 
-	const [loading, setLoading] = useState(isEdit)
 	const [saving, setSaving] = useState(false)
 	const [form, setForm] = useState({
+		email: '',
 		display_name: '',
 		bio: '',
 		specialties: '',
-		is_active: true,
 	})
 
-	useEffect(() => {
-		if (!id) return
-		async function load() {
-			const { data } = await supabase.from('workers').select('*').eq('id', id).single()
-			if (data) {
-				setForm({
-					display_name: data.display_name,
-					bio: data.bio ?? '',
-					specialties: data.specialties?.join(', ') ?? '',
-					is_active: data.is_active,
-				})
-			}
-			setLoading(false)
+	async function handleInvite() {
+		if (!form.email.trim()) {
+			Alert.alert('Error', 'Email is required')
+			return
 		}
-		load()
-	}, [id])
-
-	async function handleSave() {
 		if (!form.display_name.trim()) {
 			Alert.alert('Error', 'Display name is required')
 			return
 		}
+		if (!businessId || !user) return
 
 		setSaving(true)
+		const email = form.email.trim().toLowerCase()
 		const specialties = form.specialties
 			.split(',')
 			.map((s) => s.trim())
 			.filter(Boolean)
 
-		const payload = {
-			display_name: form.display_name.trim(),
-			bio: form.bio.trim() || null,
-			specialties: specialties.length > 0 ? specialties : null,
-			is_active: form.is_active,
+		// Check if already invited
+		const { data: existingInvite } = await supabase
+			.from('worker_invitations')
+			.select('id, status')
+			.eq('email', email)
+			.eq('business_id', businessId)
+			.single()
+
+		if (existingInvite) {
+			setSaving(false)
+			if (existingInvite.status === 'pending') {
+				Alert.alert('Error', 'This email already has a pending invitation')
+				return
+			}
+			if (existingInvite.status === 'accepted') {
+				Alert.alert('Error', 'This person is already a worker')
+				return
+			}
 		}
 
-		const { error } = isEdit
-			? await supabase.from('workers').update(payload).eq('id', id)
-			: await supabase.from('workers').insert(payload)
+		// Check if user exists in platform
+		const { data: existingProfile } = await supabase
+			.from('profiles')
+			.select('id')
+			.eq('email', email)
+			.single()
 
-		setSaving(false)
-		if (error) {
-			Alert.alert('Error', error.message)
+		if (existingProfile) {
+			// Check if already a worker
+			const { data: existingWorker } = await supabase
+				.from('workers')
+				.select('id')
+				.eq('user_id', existingProfile.id)
+				.eq('business_id', businessId)
+				.single()
+
+			if (existingWorker) {
+				setSaving(false)
+				Alert.alert('Error', 'This person is already a worker for your business')
+				return
+			}
+
+			// Create worker directly
+			const { error: workerError } = await supabase.from('workers').insert({
+				business_id: businessId,
+				user_id: existingProfile.id,
+				display_name: form.display_name.trim(),
+				bio: form.bio.trim() || null,
+				specialties: specialties.length > 0 ? specialties : null,
+				is_active: true,
+			})
+
+			if (workerError) {
+				setSaving(false)
+				Alert.alert('Error', workerError.message)
+				return
+			}
+
+			// Record accepted invitation
+			await supabase.from('worker_invitations').insert({
+				business_id: businessId,
+				email,
+				display_name: form.display_name.trim(),
+				bio: form.bio.trim() || null,
+				specialties: specialties.length > 0 ? specialties : null,
+				invited_by: user.id,
+				status: 'accepted',
+				accepted_at: new Date().toISOString(),
+			})
+
+			setSaving(false)
+			Alert.alert('Success', 'Worker added successfully!', [
+				{ text: 'OK', onPress: () => router.back() },
+			])
 		} else {
-			router.back()
-		}
-	}
+			// User doesn't exist — create pending invitation
+			const { error: inviteError } = await supabase.from('worker_invitations').insert({
+				business_id: businessId,
+				email,
+				display_name: form.display_name.trim(),
+				bio: form.bio.trim() || null,
+				specialties: specialties.length > 0 ? specialties : null,
+				invited_by: user.id,
+				status: 'pending',
+			})
 
-	if (loading) {
-		return (
-			<View style={styles.centered}>
-				<ActivityIndicator size="large" color={colors.primary} />
-			</View>
-		)
+			setSaving(false)
+			if (inviteError) {
+				Alert.alert('Error', inviteError.message)
+				return
+			}
+
+			Alert.alert(
+				'Invitation Created',
+				'They\'ll be added automatically when they sign up.',
+				[{ text: 'OK', onPress: () => router.back() }],
+			)
+		}
 	}
 
 	return (
@@ -98,6 +157,23 @@ export default function AddWorkerScreen() {
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
 			>
+				<View style={styles.field}>
+					<Text style={styles.label}>Email</Text>
+					<TextInput
+						style={styles.input}
+						value={form.email}
+						onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
+						placeholder="worker@example.com"
+						placeholderTextColor={colors.foregroundSecondary}
+						keyboardType="email-address"
+						autoCapitalize="none"
+						autoCorrect={false}
+					/>
+					<Text style={styles.hint}>
+						If they have an account, they'll be added instantly. Otherwise, they'll be linked when they sign up.
+					</Text>
+				</View>
+
 				<View style={styles.field}>
 					<Text style={styles.label}>Display name</Text>
 					<TextInput
@@ -135,29 +211,16 @@ export default function AddWorkerScreen() {
 					<Text style={styles.hint}>Separate with commas</Text>
 				</View>
 
-				<View style={styles.toggleRow}>
-					<View style={{ flex: 1 }}>
-						<Text style={styles.label}>Active</Text>
-						<Text style={styles.hint}>Available for bookings</Text>
-					</View>
-					<Switch
-						value={form.is_active}
-						onValueChange={(v) => setForm((p) => ({ ...p, is_active: v }))}
-						trackColor={{ false: colors.border, true: colors.primary + '80' }}
-						thumbColor={form.is_active ? colors.primary : colors.foregroundSecondary}
-					/>
-				</View>
-
 				<TouchableOpacity
 					style={[styles.button, saving && styles.buttonDisabled]}
-					onPress={handleSave}
+					onPress={handleInvite}
 					disabled={saving}
 					activeOpacity={0.8}
 				>
 					{saving ? (
 						<ActivityIndicator color={colors.white} size="small" />
 					) : (
-						<Text style={styles.buttonText}>{isEdit ? 'Update Worker' : 'Add Worker'}</Text>
+						<Text style={styles.buttonText}>Send Invitation</Text>
 					)}
 				</TouchableOpacity>
 			</ScrollView>
@@ -167,7 +230,6 @@ export default function AddWorkerScreen() {
 
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: colors.background },
-	centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 	scroll: { padding: spacing['2xl'], paddingBottom: spacing['5xl'] },
 	field: { gap: spacing.sm, marginBottom: spacing.lg },
 	label: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground },
@@ -183,16 +245,6 @@ const styles = StyleSheet.create({
 		backgroundColor: colors.surface,
 	},
 	textarea: { height: 80, paddingTop: spacing.md },
-	toggleRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		padding: spacing.lg,
-		borderWidth: 1,
-		borderColor: colors.border,
-		borderRadius: radius.md,
-		backgroundColor: colors.surface,
-		marginBottom: spacing.lg,
-	},
 	button: {
 		height: 48,
 		borderRadius: radius.md,
