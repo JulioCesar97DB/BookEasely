@@ -1,6 +1,7 @@
 'use client'
 
 import { signOut } from '@/app/(auth)/actions'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import type { UserRole } from '@/lib/types'
@@ -107,11 +108,14 @@ export function DashboardSidebar({ role, userName }: { role: UserRole; userName:
 						</div>
 						<span className="truncate text-sm font-medium">{userName}</span>
 					</div>
-					<form action={signOut}>
-						<Button type="submit" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive">
-							<LogOut className="h-4 w-4" />
-						</Button>
-					</form>
+					<div className="flex items-center gap-1">
+						<ThemeToggle className="h-8 w-8 shrink-0 text-muted-foreground" />
+						<form action={signOut}>
+							<Button type="submit" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive">
+								<LogOut className="h-4 w-4" />
+							</Button>
+						</form>
+					</div>
 				</div>
 			</div>
 		</aside>

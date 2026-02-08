@@ -1,3 +1,4 @@
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { CalendarCheck } from 'lucide-react'
@@ -17,7 +18,8 @@ export async function PublicHeader() {
 					<span className="text-lg font-semibold tracking-tight">BookEasely</span>
 				</Link>
 
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-2">
+					<ThemeToggle className="h-9 w-9 text-muted-foreground" />
 					{user ? (
 						<Button asChild size="sm">
 							<Link href="/dashboard">Dashboard</Link>
