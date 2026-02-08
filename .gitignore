@@ -53,3 +53,7 @@ Thumbs.db
 
 # Misc
 *.pem
+
+# Project docs (not tracked)
+CLAUDE.md
+BookEasely-Requirements.md
