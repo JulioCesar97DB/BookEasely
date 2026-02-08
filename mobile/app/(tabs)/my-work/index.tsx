@@ -1,3 +1,5 @@
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
+import { AnimatedScreen } from '../../../components/animated-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
@@ -72,97 +74,101 @@ export default function MyWorkScreen() {
 	}
 
 	return (
-		<SafeAreaView style={styles.container} edges={['top']}>
-			<View style={styles.header}>
-				<Text style={styles.title}>My Work</Text>
-			</View>
-
-			{/* Stats Row */}
-			<View style={styles.statsRow}>
-				<View style={styles.statCard}>
-					<Text style={styles.statValue}>{todayCount}</Text>
-					<Text style={styles.statLabel}>Today</Text>
+		<AnimatedScreen>
+			<SafeAreaView style={styles.container} edges={['top']}>
+				<View style={styles.header}>
+					<Text style={styles.title}>My Work</Text>
 				</View>
-				<View style={styles.statCard}>
-					<Text style={styles.statValue}>{upcomingCount}</Text>
-					<Text style={styles.statLabel}>This Week</Text>
-				</View>
-				<View style={styles.statCard}>
-					<Text style={styles.statValue}>{workers.length}</Text>
-					<Text style={styles.statLabel}>Businesses</Text>
-				</View>
-			</View>
 
-			{/* Quick Actions */}
-			<View style={styles.actionsRow}>
-				<TouchableOpacity
-					style={styles.actionBtn}
-					activeOpacity={0.7}
-					onPress={() => {
-						if (workers.length > 0) {
-							router.push({ pathname: '/(tabs)/my-work/schedule', params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } } as never)
-						}
-					}}
-				>
-					<View style={styles.actionIcon}>
-						<Ionicons name="time-outline" size={20} color={colors.primary} />
+				{/* Stats Row */}
+				<Animated.View entering={FadeInDown.delay(50).duration(200)} style={styles.statsRow}>
+					<View style={styles.statCard}>
+						<Text style={styles.statValue}>{todayCount}</Text>
+						<Text style={styles.statLabel}>Today</Text>
 					</View>
-					<Text style={styles.actionText}>My Schedule</Text>
-				</TouchableOpacity>
-				<TouchableOpacity
-					style={styles.actionBtn}
-					activeOpacity={0.7}
-					onPress={() => {
-						if (workers.length > 0) {
-							router.push({ pathname: '/(tabs)/my-work/blocked-dates', params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } } as never)
-						}
-					}}
-				>
-					<View style={styles.actionIcon}>
-						<Ionicons name="calendar-outline" size={20} color={colors.primary} />
+					<View style={styles.statCard}>
+						<Text style={styles.statValue}>{upcomingCount}</Text>
+						<Text style={styles.statLabel}>This Week</Text>
 					</View>
-					<Text style={styles.actionText}>Time Off</Text>
-				</TouchableOpacity>
-				<TouchableOpacity
-					style={styles.actionBtn}
-					activeOpacity={0.7}
-					onPress={() => router.push('/(tabs)/my-work/appointments' as never)}
-				>
-					<View style={styles.actionIcon}>
-						<Ionicons name="clipboard-outline" size={20} color={colors.primary} />
+					<View style={styles.statCard}>
+						<Text style={styles.statValue}>{workers.length}</Text>
+						<Text style={styles.statLabel}>Businesses</Text>
 					</View>
-					<Text style={styles.actionText}>Appointments</Text>
-				</TouchableOpacity>
-			</View>
+				</Animated.View>
 
-			{/* Workplaces */}
-			<Text style={styles.sectionTitle}>Your Workplaces</Text>
-			<FlatList
-				data={workers}
-				keyExtractor={(item) => item.id}
-				contentContainerStyle={styles.list}
-				renderItem={({ item }) => (
-					<View style={styles.businessCard}>
-						<View style={styles.businessIcon}>
-							<Ionicons name="storefront-outline" size={22} color={colors.primary} />
+				{/* Quick Actions */}
+				<Animated.View entering={FadeInDown.delay(100).duration(200)} style={styles.actionsRow}>
+					<TouchableOpacity
+						style={styles.actionBtn}
+						activeOpacity={0.7}
+						onPress={() => {
+							if (workers.length > 0) {
+								router.push({ pathname: '/(tabs)/my-work/schedule', params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } } as never)
+							}
+						}}
+					>
+						<View style={styles.actionIcon}>
+							<Ionicons name="time-outline" size={20} color={colors.primary} />
 						</View>
-						<View style={styles.businessInfo}>
-							<Text style={styles.businessName}>{item.businesses?.name ?? 'Business'}</Text>
-							<Text style={styles.businessRole}>as {item.display_name}</Text>
+						<Text style={styles.actionText}>My Schedule</Text>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={styles.actionBtn}
+						activeOpacity={0.7}
+						onPress={() => {
+							if (workers.length > 0) {
+								router.push({ pathname: '/(tabs)/my-work/blocked-dates', params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } } as never)
+							}
+						}}
+					>
+						<View style={styles.actionIcon}>
+							<Ionicons name="calendar-outline" size={20} color={colors.primary} />
 						</View>
-						<View style={styles.workerBadge}>
-							<Text style={styles.workerBadgeText}>Worker</Text>
+						<Text style={styles.actionText}>Time Off</Text>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={styles.actionBtn}
+						activeOpacity={0.7}
+						onPress={() => router.push('/(tabs)/my-work/appointments' as never)}
+					>
+						<View style={styles.actionIcon}>
+							<Ionicons name="clipboard-outline" size={20} color={colors.primary} />
 						</View>
-					</View>
-				)}
-				ListEmptyComponent={
-					<View style={styles.empty}>
-						<Ionicons name="briefcase-outline" size={40} color={colors.border} />
-						<Text style={styles.emptyText}>No active workplaces</Text>
-					</View>
-				}
-			/>
-		</SafeAreaView>
+						<Text style={styles.actionText}>Appointments</Text>
+					</TouchableOpacity>
+				</Animated.View>
+
+				{/* Workplaces */}
+				<Animated.View entering={FadeInDown.delay(150).duration(200)}>
+					<Text style={styles.sectionTitle}>Your Workplaces</Text>
+				</Animated.View>
+				<FlatList
+					data={workers}
+					keyExtractor={(item) => item.id}
+					contentContainerStyle={styles.list}
+					renderItem={({ item }) => (
+						<View style={styles.businessCard}>
+							<View style={styles.businessIcon}>
+								<Ionicons name="storefront-outline" size={22} color={colors.primary} />
+							</View>
+							<View style={styles.businessInfo}>
+								<Text style={styles.businessName}>{item.businesses?.name ?? 'Business'}</Text>
+								<Text style={styles.businessRole}>as {item.display_name}</Text>
+							</View>
+							<View style={styles.workerBadge}>
+								<Text style={styles.workerBadgeText}>Worker</Text>
+							</View>
+						</View>
+					)}
+					ListEmptyComponent={
+						<View style={styles.empty}>
+							<Ionicons name="briefcase-outline" size={40} color={colors.border} />
+							<Text style={styles.emptyText}>No active workplaces</Text>
+						</View>
+					}
+				/>
+			</SafeAreaView>
+		</AnimatedScreen>
 	)
 }
 

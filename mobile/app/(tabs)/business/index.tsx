@@ -1,3 +1,5 @@
+import Animated, { FadeInDown } from 'react-native-reanimated'
+import { AnimatedScreen } from '../../../components/animated-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
@@ -90,73 +92,77 @@ export default function BusinessDashboard() {
 	}
 
 	return (
-		<SafeAreaView style={styles.container} edges={['top']}>
-			<ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-				<View style={styles.header}>
-					<Text style={styles.title}>My Business</Text>
-				</View>
+		<AnimatedScreen>
+			<SafeAreaView style={styles.container} edges={['top']}>
+				<ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+					<View style={styles.header}>
+						<Text style={styles.title}>My Business</Text>
+					</View>
 
-				{/* Business Card */}
-				<View style={styles.businessCard}>
-					<View style={styles.businessIcon}>
-						<Ionicons name="storefront" size={24} color={colors.white} />
-					</View>
-					<View style={styles.businessInfo}>
-						<Text style={styles.businessName}>{business.name}</Text>
-						{business.city && business.state && (
-							<Text style={styles.businessLocation}>
-								{business.city}, {business.state}
-							</Text>
-						)}
-					</View>
-					{business.rating_count > 0 && (
-						<View style={styles.ratingBadge}>
-							<Ionicons name="star" size={14} color="#F59E0B" />
-							<Text style={styles.ratingText}>{business.rating_avg.toFixed(1)}</Text>
+					{/* Business Card */}
+					<Animated.View entering={FadeInDown.delay(50).duration(200)} style={styles.businessCard}>
+						<View style={styles.businessIcon}>
+							<Ionicons name="storefront" size={24} color={colors.white} />
 						</View>
-					)}
-				</View>
-
-				{/* Stats */}
-				<View style={styles.statsRow}>
-					<View style={styles.statCard}>
-						<Text style={styles.statNumber}>{stats.services}</Text>
-						<Text style={styles.statLabel}>Services</Text>
-					</View>
-					<View style={styles.statCard}>
-						<Text style={styles.statNumber}>{stats.workers}</Text>
-						<Text style={styles.statLabel}>Workers</Text>
-					</View>
-					<View style={styles.statCard}>
-						<Text style={styles.statNumber}>{stats.today}</Text>
-						<Text style={styles.statLabel}>Today</Text>
-					</View>
-					<View style={styles.statCard}>
-						<Text style={styles.statNumber}>{stats.upcoming}</Text>
-						<Text style={styles.statLabel}>Upcoming</Text>
-					</View>
-				</View>
-
-				{/* Quick Actions */}
-				<Text style={styles.sectionTitle}>Quick Actions</Text>
-				<View style={styles.actionsGrid}>
-					{actions.map((action) => (
-						<TouchableOpacity
-							key={action.route}
-							style={styles.actionCard}
-							activeOpacity={0.7}
-							onPress={() => router.push(action.route as never)}
-						>
-							<View style={[styles.actionIcon, { backgroundColor: action.color + '15' }]}>
-								<Ionicons name={action.icon} size={22} color={action.color} />
+						<View style={styles.businessInfo}>
+							<Text style={styles.businessName}>{business.name}</Text>
+							{business.city && business.state && (
+								<Text style={styles.businessLocation}>
+									{business.city}, {business.state}
+								</Text>
+							)}
+						</View>
+						{business.rating_count > 0 && (
+							<View style={styles.ratingBadge}>
+								<Ionicons name="star" size={14} color="#F59E0B" />
+								<Text style={styles.ratingText}>{business.rating_avg.toFixed(1)}</Text>
 							</View>
-							<Text style={styles.actionLabel}>{action.label}</Text>
-							<Ionicons name="chevron-forward" size={16} color={colors.foregroundSecondary} />
-						</TouchableOpacity>
-					))}
-				</View>
-			</ScrollView>
-		</SafeAreaView>
+						)}
+					</Animated.View>
+
+					{/* Stats */}
+					<Animated.View entering={FadeInDown.delay(100).duration(200)} style={styles.statsRow}>
+						<View style={styles.statCard}>
+							<Text style={styles.statNumber}>{stats.services}</Text>
+							<Text style={styles.statLabel}>Services</Text>
+						</View>
+						<View style={styles.statCard}>
+							<Text style={styles.statNumber}>{stats.workers}</Text>
+							<Text style={styles.statLabel}>Workers</Text>
+						</View>
+						<View style={styles.statCard}>
+							<Text style={styles.statNumber}>{stats.today}</Text>
+							<Text style={styles.statLabel}>Today</Text>
+						</View>
+						<View style={styles.statCard}>
+							<Text style={styles.statNumber}>{stats.upcoming}</Text>
+							<Text style={styles.statLabel}>Upcoming</Text>
+						</View>
+					</Animated.View>
+
+					{/* Quick Actions */}
+					<Animated.View entering={FadeInDown.delay(150).duration(200)}>
+						<Text style={styles.sectionTitle}>Quick Actions</Text>
+						<View style={styles.actionsGrid}>
+							{actions.map((action, index) => (
+								<TouchableOpacity
+									key={action.route}
+									style={styles.actionCard}
+									activeOpacity={0.7}
+									onPress={() => router.push(action.route as never)}
+								>
+									<View style={[styles.actionIcon, { backgroundColor: action.color + '15' }]}>
+										<Ionicons name={action.icon} size={22} color={action.color} />
+									</View>
+									<Text style={styles.actionLabel}>{action.label}</Text>
+									<Ionicons name="chevron-forward" size={16} color={colors.foregroundSecondary} />
+								</TouchableOpacity>
+							))}
+						</View>
+					</Animated.View>
+				</ScrollView>
+			</SafeAreaView>
+		</AnimatedScreen>
 	)
 }
 

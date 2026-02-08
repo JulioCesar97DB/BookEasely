@@ -1,3 +1,4 @@
+import { AnimatedScreen } from '../../components/animated-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Link } from 'expo-router'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -9,33 +10,35 @@ export default function FavoritesScreen() {
 	const { user } = useAuth()
 
 	return (
-		<SafeAreaView style={styles.container} edges={['top']}>
-			<View style={styles.header}>
-				<Text style={styles.title}>Favorites</Text>
-			</View>
-			{!user ? (
-				<View style={styles.emptyState}>
-					<Ionicons name="heart-outline" size={48} color={colors.border} />
-					<Text style={styles.emptyTitle}>Sign in to save favorites</Text>
-					<Text style={styles.emptySubtitle}>
-						Save businesses you love for quick access later
-					</Text>
-					<Link href="/(auth)/login" asChild>
-						<TouchableOpacity style={styles.signInBtn} activeOpacity={0.8}>
-							<Text style={styles.signInBtnText}>Sign in</Text>
-						</TouchableOpacity>
-					</Link>
+		<AnimatedScreen>
+			<SafeAreaView style={styles.container} edges={['top']}>
+				<View style={styles.header}>
+					<Text style={styles.title}>Favorites</Text>
 				</View>
-			) : (
-				<View style={styles.emptyState}>
-					<Ionicons name="heart-outline" size={48} color={colors.border} />
-					<Text style={styles.emptyTitle}>No favorites yet</Text>
-					<Text style={styles.emptySubtitle}>
-						Save businesses you love for quick access later
-					</Text>
-				</View>
-			)}
-		</SafeAreaView>
+				{!user ? (
+					<View style={styles.emptyState}>
+						<Ionicons name="heart-outline" size={48} color={colors.border} />
+						<Text style={styles.emptyTitle}>Sign in to save favorites</Text>
+						<Text style={styles.emptySubtitle}>
+							Save businesses you love for quick access later
+						</Text>
+						<Link href="/(auth)/login" asChild>
+							<TouchableOpacity style={styles.signInBtn} activeOpacity={0.8}>
+								<Text style={styles.signInBtnText}>Sign in</Text>
+							</TouchableOpacity>
+						</Link>
+					</View>
+				) : (
+					<View style={styles.emptyState}>
+						<Ionicons name="heart-outline" size={48} color={colors.border} />
+						<Text style={styles.emptyTitle}>No favorites yet</Text>
+						<Text style={styles.emptySubtitle}>
+							Save businesses you love for quick access later
+						</Text>
+					</View>
+				)}
+			</SafeAreaView>
+		</AnimatedScreen>
 	)
 }
 

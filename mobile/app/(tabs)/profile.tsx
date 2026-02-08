@@ -1,3 +1,4 @@
+import { AnimatedScreen } from '../../components/animated-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
@@ -61,71 +62,73 @@ export default function ProfileScreen() {
 	}
 
 	return (
-		<SafeAreaView style={styles.container} edges={['top']}>
-			<View style={styles.header}>
-				<Text style={styles.title}>Profile</Text>
-			</View>
-
-			{/* Avatar + Name */}
-			<View style={styles.profileCard}>
-				<View style={styles.avatar}>
-					<Text style={styles.avatarText}>
-						{(profile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
-					</Text>
+		<AnimatedScreen>
+			<SafeAreaView style={styles.container} edges={['top']}>
+				<View style={styles.header}>
+					<Text style={styles.title}>Profile</Text>
 				</View>
-				<View style={styles.profileInfo}>
-					<Text style={styles.profileName}>{profile?.full_name || 'User'}</Text>
-					<Text style={styles.profileEmail}>{user?.email}</Text>
-					<View style={styles.roleRow}>
-						<View style={styles.roleBadge}>
-							<Text style={styles.roleText}>
-								{profile?.role === 'business_owner' ? 'Business Owner' : isWorker ? 'Worker' : 'Client'}
-							</Text>
+
+				{/* Avatar + Name */}
+				<View style={styles.profileCard}>
+					<View style={styles.avatar}>
+						<Text style={styles.avatarText}>
+							{(profile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+						</Text>
+					</View>
+					<View style={styles.profileInfo}>
+						<Text style={styles.profileName}>{profile?.full_name || 'User'}</Text>
+						<Text style={styles.profileEmail}>{user?.email}</Text>
+						<View style={styles.roleRow}>
+							<View style={styles.roleBadge}>
+								<Text style={styles.roleText}>
+									{profile?.role === 'business_owner' ? 'Business Owner' : isWorker ? 'Worker' : 'Client'}
+								</Text>
+							</View>
+							{profile?.created_at && (
+								<Text style={styles.memberSince}>
+									Since {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+								</Text>
+							)}
 						</View>
-						{profile?.created_at && (
-							<Text style={styles.memberSince}>
-								Since {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-							</Text>
-						)}
 					</View>
 				</View>
-			</View>
 
-			{/* Menu items */}
-			<View style={styles.menu}>
-				<MenuItem
-					icon="person-outline"
-					label="Edit Profile"
-					onPress={() => router.push('/(tabs)/edit-profile' as never)}
-				/>
-				{profile?.role === 'business_owner' && (
+				{/* Menu items */}
+				<View style={styles.menu}>
 					<MenuItem
-						icon="storefront-outline"
-						label="My Business"
-						onPress={() => router.push('/(tabs)/business' as never)}
+						icon="person-outline"
+						label="Edit Profile"
+						onPress={() => router.push('/(tabs)/edit-profile' as never)}
 					/>
-				)}
-				{isWorker && (
-					<MenuItem
-						icon="briefcase-outline"
-						label="My Work"
-						onPress={() => router.push('/(tabs)/my-work' as never)}
-					/>
-				)}
-				<MenuItem icon="notifications-outline" label="Notifications" />
-				<MenuItem icon="shield-checkmark-outline" label="Privacy & Security" />
-				<MenuItem icon="help-circle-outline" label="Help & Support" />
-			</View>
+					{profile?.role === 'business_owner' && (
+						<MenuItem
+							icon="storefront-outline"
+							label="My Business"
+							onPress={() => router.push('/(tabs)/business' as never)}
+						/>
+					)}
+					{isWorker && (
+						<MenuItem
+							icon="briefcase-outline"
+							label="My Work"
+							onPress={() => router.push('/(tabs)/my-work' as never)}
+						/>
+					)}
+					<MenuItem icon="notifications-outline" label="Notifications" />
+					<MenuItem icon="shield-checkmark-outline" label="Privacy & Security" />
+					<MenuItem icon="help-circle-outline" label="Help & Support" />
+				</View>
 
-			<TouchableOpacity
-				style={styles.signOutButton}
-				onPress={handleSignOut}
-				activeOpacity={0.7}
-			>
-				<Ionicons name="log-out-outline" size={20} color={colors.destructive} />
-				<Text style={styles.signOutText}>Sign Out</Text>
-			</TouchableOpacity>
-		</SafeAreaView>
+				<TouchableOpacity
+					style={styles.signOutButton}
+					onPress={handleSignOut}
+					activeOpacity={0.7}
+				>
+					<Ionicons name="log-out-outline" size={20} color={colors.destructive} />
+					<Text style={styles.signOutText}>Sign Out</Text>
+				</TouchableOpacity>
+			</SafeAreaView>
+		</AnimatedScreen>
 	)
 }
 

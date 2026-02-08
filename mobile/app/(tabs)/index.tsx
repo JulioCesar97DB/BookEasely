@@ -1,3 +1,4 @@
+import { AnimatedScreen } from '../../components/animated-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Link } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -343,18 +344,20 @@ export default function DiscoverScreen() {
 	)
 
 	return (
-		<SafeAreaView style={styles.container} edges={['top']}>
-			<FlatList
-				data={businesses}
-				renderItem={renderBusinessCard}
-				keyExtractor={(item) => item.id}
-				ListHeaderComponent={ListHeader}
-				ListEmptyComponent={ListEmpty}
-				ListFooterComponent={ListFooter}
-				contentContainerStyle={styles.listContent}
-				showsVerticalScrollIndicator={false}
-			/>
-		</SafeAreaView>
+		<AnimatedScreen>
+			<SafeAreaView style={styles.container} edges={['top']}>
+				<FlatList
+					data={businesses}
+					renderItem={renderBusinessCard}
+					keyExtractor={(item) => item.id}
+					ListHeaderComponent={ListHeader}
+					ListEmptyComponent={ListEmpty}
+					ListFooterComponent={ListFooter}
+					contentContainerStyle={styles.listContent}
+					showsVerticalScrollIndicator={false}
+				/>
+			</SafeAreaView>
+		</AnimatedScreen>
 	)
 }
 
