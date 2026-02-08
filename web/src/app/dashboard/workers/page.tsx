@@ -1,17 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { WorkersClient } from './workers-client'
 
 export default async function WorkersPage() {
 	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
 
-	if (!user) redirect('/auth/login')
+	// User is guaranteed to be authenticated by proxy.ts
+	const { data: { user } } = await supabase.auth.getUser()
 
 	const { data: business } = await supabase
 		.from('businesses')
 		.select('id')
-		.eq('owner_id', user.id)
+		.eq('owner_id', user!.id)
 		.single()
 
 	if (!business) {
@@ -41,18 +40,18 @@ export default async function WorkersPage() {
 		.order('date')
 
 	// Check if owner is already a worker
-	const ownerIsWorker = workers?.some((w) => w.user_id === user.id) ?? false
+	const ownerIsWorker = workers?.some((w) => w.user_id === user!.id) ?? false
 
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select('full_name')
-		.eq('id', user.id)
+		.eq('id', user!.id)
 		.single()
 
 	return (
 		<WorkersClient
 			businessId={business.id}
-			userId={user.id}
+			userId={user!.id}
 			userName={profile?.full_name ?? ''}
 			workers={workers ?? []}
 			availability={availability ?? []}

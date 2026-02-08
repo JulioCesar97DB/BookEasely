@@ -1,17 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { ServicesClient } from './services-client'
 
 export default async function ServicesPage() {
 	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
 
-	if (!user) redirect('/auth/login')
+	// User is guaranteed to be authenticated by proxy.ts
+	const { data: { user } } = await supabase.auth.getUser()
 
 	const { data: business } = await supabase
 		.from('businesses')
 		.select('id')
-		.eq('owner_id', user.id)
+		.eq('owner_id', user!.id)
 		.single()
 
 	if (!business) {
