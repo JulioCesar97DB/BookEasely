@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 
 export interface NavItem {
 	label: string
@@ -65,32 +65,36 @@ export function getNavForRole(role: UserRole, isWorker?: boolean): NavItem[] {
 const SIDEBAR_EXPANDED = 256
 const SIDEBAR_COLLAPSED = 68
 
+const subscribe = () => () => { }
+const getSnapshot = () => localStorage.getItem('sidebar-collapsed') === 'true'
+const getServerSnapshot = () => false
+
 export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole; userName: string; isWorker?: boolean }) {
 	const pathname = usePathname()
 	const nav = role === 'business_owner' ? businessNav : isWorker ? workerNav : clientNav
 
-	const [collapsed, setCollapsed] = useState(false)
-	const [mounted, setMounted] = useState(false)
+	const isCollapsedFromStorage = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+	const [collapsed, setCollapsed] = useState(isCollapsedFromStorage)
+	const [hasInteracted, setHasInteracted] = useState(false)
 
-	useEffect(() => {
-		setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true')
-		setMounted(true)
-	}, [])
+	// On first client render, sync from storage without useEffect
+	const effectiveCollapsed = hasInteracted ? collapsed : isCollapsedFromStorage
 
-	function toggleCollapsed() {
+	const toggleCollapsed = useCallback(() => {
+		setHasInteracted(true)
 		setCollapsed((prev) => {
 			const next = !prev
 			localStorage.setItem('sidebar-collapsed', String(next))
 			return next
 		})
-	}
+	}, [])
 
 	return (
 		<TooltipProvider>
 			<motion.aside
 				className="relative hidden md:flex h-svh flex-col border-r bg-sidebar overflow-visible"
-				animate={{ width: collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
-				transition={mounted ? { duration: 0.2, ease: 'easeInOut' } : { duration: 0 }}
+				animate={{ width: effectiveCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
+				transition={hasInteracted ? { duration: 0.2, ease: 'easeInOut' } : { duration: 0 }}
 				style={{ flexShrink: 0 }}
 			>
 				{/* Collapse toggle — sits on the right border */}
@@ -99,21 +103,21 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 					onClick={toggleCollapsed}
 					className={cn(
 						'absolute top-5 z-20 flex h-6 w-6 items-center justify-center rounded-full border bg-sidebar text-sidebar-foreground/50 shadow-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground',
-						collapsed ? '-right-3' : '-right-3'
+						effectiveCollapsed ? '-right-3' : '-right-3'
 					)}
 				>
-					{collapsed ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />}
+					{effectiveCollapsed ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />}
 				</button>
 
 				{/* Logo */}
 				<div className="overflow-hidden">
-					<div className={cn('flex h-16 items-center gap-2.5', collapsed ? 'justify-center px-3' : 'px-6')}>
+					<div className={cn('flex h-16 items-center gap-2.5', effectiveCollapsed ? 'justify-center px-3' : 'px-6')}>
 						<Link href="/" className="flex items-center gap-2.5">
 							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
 								<CalendarCheck className="h-4.5 w-4.5 text-primary-foreground" />
 							</div>
 							<AnimatePresence>
-								{!collapsed && (
+								{!effectiveCollapsed && (
 									<motion.span
 										initial={{ opacity: 0, width: 0 }}
 										animate={{ opacity: 1, width: 'auto' }}
@@ -132,7 +136,7 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 				<Separator />
 
 				{/* Navigation */}
-				<nav className={cn('flex-1 space-y-1 py-4 overflow-hidden', collapsed ? 'px-2' : 'px-3')}>
+				<nav className={cn('flex-1 space-y-1 py-4 overflow-hidden', effectiveCollapsed ? 'px-2' : 'px-3')}>
 					{nav.map((item) => {
 						const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
 						return (
@@ -140,31 +144,31 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 								key={item.href}
 								item={item}
 								isActive={isActive}
-								collapsed={collapsed}
+								collapsed={effectiveCollapsed}
 							/>
 						)
 					})}
 				</nav>
 
 				{/* Footer */}
-				<div className={cn('border-t space-y-1 overflow-hidden', collapsed ? 'p-2' : 'p-4')}>
+				<div className={cn('border-t space-y-1 overflow-hidden', effectiveCollapsed ? 'p-2' : 'p-4')}>
 					{/* Settings */}
 					<NavLink
 						item={{ label: 'Settings', href: '/dashboard/settings', icon: Settings }}
 						isActive={pathname === '/dashboard/settings'}
-						collapsed={collapsed}
+						collapsed={effectiveCollapsed}
 					/>
 
 					{/* User row */}
 					<div className={cn(
 						'flex items-center',
-						collapsed ? 'flex-col gap-1 py-2' : 'justify-between px-3 py-2'
+						effectiveCollapsed ? 'flex-col gap-1 py-2' : 'justify-between px-3 py-2'
 					)}>
 						<Link
 							href="/dashboard/profile"
 							className={cn(
 								'flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity',
-								collapsed && 'justify-center'
+								effectiveCollapsed && 'justify-center'
 							)}
 						>
 							<Tooltip>
@@ -173,14 +177,14 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 										{userName.charAt(0).toUpperCase()}
 									</div>
 								</TooltipTrigger>
-								{collapsed && (
+								{effectiveCollapsed && (
 									<TooltipContent side="right" sideOffset={8}>
 										{userName}
 									</TooltipContent>
 								)}
 							</Tooltip>
 							<AnimatePresence>
-								{!collapsed && (
+								{!effectiveCollapsed && (
 									<motion.span
 										initial={{ opacity: 0, width: 0 }}
 										animate={{ opacity: 1, width: 'auto' }}
@@ -193,7 +197,7 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 								)}
 							</AnimatePresence>
 						</Link>
-						<div className={cn('flex items-center', collapsed ? 'flex-col gap-1' : 'gap-1')}>
+						<div className={cn('flex items-center', effectiveCollapsed ? 'flex-col gap-1' : 'gap-1')}>
 							<ThemeToggle className="h-8 w-8 shrink-0 text-muted-foreground" />
 							<form action={signOut}>
 								<Button type="submit" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive">
