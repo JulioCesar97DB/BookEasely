@@ -25,7 +25,7 @@ export default function AuthLayout({
 
 			{/* Right - Visual */}
 			<div className="relative hidden overflow-hidden bg-primary lg:block">
-				<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_oklch(0.65_0.22_255)_0%,_oklch(0.45_0.18_260)_50%,_oklch(0.30_0.15_270)_100%)]" />
+				<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,oklch(0.65_0.22_255)_0%,oklch(0.45_0.18_260)_50%,oklch(0.30_0.15_270)_100%)]" />
 				<div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
 
 				<div className="relative flex h-full flex-col items-center justify-center px-12 text-white">
