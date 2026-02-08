@@ -40,6 +40,7 @@ export function MobileHeader({ role, userName, isWorker }: { role: UserRole; use
 			{/* Drawer */}
 			<Sheet open={open} onOpenChange={setOpen}>
 				<SheetContent side="left" showCloseButton={false} className="w-72 p-0">
+					<SheetTitle className="sr-only">Navigation</SheetTitle>
 					{/* Drawer logo */}
 					<div className="flex h-14 items-center gap-2.5 px-5 border-b">
 						<Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
