@@ -1,5 +1,6 @@
 'use client'
 
+import { BusinessImageCarousel } from '@/components/business-image-carousel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +9,6 @@ import type { Business, Category } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MapPin, Search, Star, X } from 'lucide-react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -214,20 +214,13 @@ function DiscoverCard({ business }: { business: BusinessWithCategory }) {
 			className="group flex gap-4 rounded-xl border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-md hover:shadow-primary/5"
 		>
 			{/* Thumbnail */}
-			<div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-				{business.cover_image_url ? (
-					<Image
-						src={business.cover_image_url}
-						alt={business.name}
-						fill
-						sizes="80px"
-						className="object-cover"
-					/>
-				) : (
-					<div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
-						<Search className="h-5 w-5" />
-					</div>
-				)}
+			<div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+				<BusinessImageCarousel
+					images={business.photos?.length ? business.photos : (business.cover_image_url ? [business.cover_image_url] : [])}
+					alt={business.name}
+					aspectRatio="square"
+					sizes="80px"
+				/>
 			</div>
 
 			{/* Info */}

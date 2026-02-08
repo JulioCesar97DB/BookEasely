@@ -1,11 +1,10 @@
-import { AnimatedScreen } from '../../components/animated-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Link } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
 	ActivityIndicator,
+	Dimensions,
 	FlatList,
-	Image,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -14,6 +13,8 @@ import {
 	View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { AnimatedScreen } from '../../components/animated-screen'
+import { BusinessImageCarousel } from '../../components/business-image-carousel'
 import { useAuth } from '../../lib/auth-context'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
@@ -57,11 +58,11 @@ interface BusinessWithCategory extends Business {
 }
 
 const defaultPopular: BusinessWithCategory[] = [
-	{ id: 'p1', owner_id: '', name: "The Gentleman's Cut", slug: 'the-gentlemans-cut', description: null, category_id: '1', address: '', city: 'Downtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.9, rating_count: 127, is_active: true, created_at: '', updated_at: '', categories: { name: 'Barbershop', slug: 'barbershop' } },
-	{ id: 'p2', owner_id: '', name: 'Serenity Spa', slug: 'serenity-spa', description: null, category_id: '4', address: '', city: 'Midtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.8, rating_count: 89, is_active: true, created_at: '', updated_at: '', categories: { name: 'Spa & Massage', slug: 'spa-massage' } },
-	{ id: 'p3', owner_id: '', name: 'FitZone Studio', slug: 'fitzone-studio', description: null, category_id: '5', address: '', city: 'West Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.7, rating_count: 203, is_active: true, created_at: '', updated_at: '', categories: { name: 'Fitness', slug: 'fitness-training' } },
-	{ id: 'p4', owner_id: '', name: 'Pawfect Grooming', slug: 'pawfect-grooming', description: null, category_id: '8', address: '', city: 'East Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.9, rating_count: 64, is_active: true, created_at: '', updated_at: '', categories: { name: 'Pet Services', slug: 'pet-services' } },
-	{ id: 'p5', owner_id: '', name: 'Glow Beauty Bar', slug: 'glow-beauty-bar', description: null, category_id: '7', address: '', city: 'Uptown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, rating_avg: 4.6, rating_count: 152, is_active: true, created_at: '', updated_at: '', categories: { name: 'Beauty', slug: 'beauty-aesthetics' } },
+	{ id: 'p1', owner_id: '', name: "The Gentleman's Cut", slug: 'the-gentlemans-cut', description: null, category_id: '1', address: '', city: 'Downtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.9, rating_count: 127, is_active: true, created_at: '', updated_at: '', categories: { name: 'Barbershop', slug: 'barbershop' } },
+	{ id: 'p2', owner_id: '', name: 'Serenity Spa', slug: 'serenity-spa', description: null, category_id: '4', address: '', city: 'Midtown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.8, rating_count: 89, is_active: true, created_at: '', updated_at: '', categories: { name: 'Spa & Massage', slug: 'spa-massage' } },
+	{ id: 'p3', owner_id: '', name: 'FitZone Studio', slug: 'fitzone-studio', description: null, category_id: '5', address: '', city: 'West Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.7, rating_count: 203, is_active: true, created_at: '', updated_at: '', categories: { name: 'Fitness', slug: 'fitness-training' } },
+	{ id: 'p4', owner_id: '', name: 'Pawfect Grooming', slug: 'pawfect-grooming', description: null, category_id: '8', address: '', city: 'East Side', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.9, rating_count: 64, is_active: true, created_at: '', updated_at: '', categories: { name: 'Pet Services', slug: 'pet-services' } },
+	{ id: 'p5', owner_id: '', name: 'Glow Beauty Bar', slug: 'glow-beauty-bar', description: null, category_id: '7', address: '', city: 'Uptown', state: '', zip_code: '', country: 'US', phone: '', email: null, website: null, latitude: null, longitude: null, cover_image_url: null, logo_url: null, photos: [], rating_avg: 4.6, rating_count: 152, is_active: true, created_at: '', updated_at: '', categories: { name: 'Beauty', slug: 'beauty-aesthetics' } },
 ]
 
 export default function DiscoverScreen() {
@@ -132,17 +133,15 @@ export default function DiscoverScreen() {
 		setSelectedCategory(prev => prev === slug ? null : slug)
 	}
 
+	const cardWidth = Dimensions.get('window').width - spacing['2xl'] * 2
+
 	const renderBusinessCard = useCallback(({ item }: { item: BusinessWithCategory }) => (
 		<View style={styles.businessCard}>
-			<View style={styles.businessImage}>
-				{item.cover_image_url ? (
-					<Image source={{ uri: item.cover_image_url }} style={styles.businessImageInner} />
-				) : (
-					<View style={styles.businessImagePlaceholder}>
-						<Ionicons name="storefront-outline" size={28} color={colors.border} />
-					</View>
-				)}
-			</View>
+			<BusinessImageCarousel
+				images={item.photos?.length ? item.photos : (item.cover_image_url ? [item.cover_image_url] : [])}
+				height={160}
+				width={cardWidth}
+			/>
 			<View style={styles.businessInfo}>
 				<View style={styles.businessHeader}>
 					<Text style={styles.businessName} numberOfLines={1}>{item.name}</Text>
@@ -264,13 +263,11 @@ export default function DiscoverScreen() {
 						{popularBusinesses.map((item) => (
 							<View key={item.id} style={styles.popularCard}>
 								<View style={styles.popularImage}>
-									{item.cover_image_url ? (
-										<Image source={{ uri: item.cover_image_url }} style={styles.popularImageInner} />
-									) : (
-										<View style={styles.popularImagePlaceholder}>
-											<Ionicons name="storefront-outline" size={22} color={colors.border} />
-										</View>
-									)}
+									<BusinessImageCarousel
+										images={item.photos?.length ? item.photos : (item.cover_image_url ? [item.cover_image_url] : [])}
+										height={120}
+										width={200}
+									/>
 									{item.rating_count > 0 && (
 										<View style={styles.popularRating}>
 											<Ionicons name="star" size={10} color={colors.primary} />

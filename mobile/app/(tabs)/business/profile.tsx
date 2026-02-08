@@ -12,6 +12,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native'
+import { PhotoUpload } from '../../../components/photo-upload'
 import { useAuth } from '../../../lib/auth-context'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
@@ -21,6 +22,8 @@ export default function EditProfileScreen() {
 	const router = useRouter()
 	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
+	const [businessId, setBusinessId] = useState('')
+	const [photos, setPhotos] = useState<string[]>([])
 	const [form, setForm] = useState({
 		name: '',
 		description: '',
@@ -42,6 +45,8 @@ export default function EditProfileScreen() {
 				.eq('owner_id', user!.id)
 				.single()
 			if (data) {
+				setBusinessId(data.id)
+				setPhotos(data.photos ?? [])
 				setForm({
 					name: data.name,
 					description: data.description ?? '',
@@ -107,6 +112,22 @@ export default function EditProfileScreen() {
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
 			>
+				{businessId !== '' && (
+					<PhotoUpload
+						businessId={businessId}
+						photos={photos}
+						onPhotosChange={(updated: string[]) => {
+							setPhotos(updated)
+							supabase
+								.from('businesses')
+								.update({ photos: updated })
+								.eq('id', businessId)
+						}}
+					/>
+				)}
+
+				<View style={styles.separator} />
+
 				<View style={styles.field}>
 					<Text style={styles.label}>Business name</Text>
 					<TextInput

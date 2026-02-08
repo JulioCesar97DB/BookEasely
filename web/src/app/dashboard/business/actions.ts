@@ -68,6 +68,25 @@ export async function updateBusinessHours(
 	return { success: true }
 }
 
+export async function updateBusinessPhotos(businessId: string, photos: string[]) {
+	const supabase = await createClient()
+	const { data: { user } } = await supabase.auth.getUser()
+	if (!user) return { error: 'Not authenticated' }
+
+	if (photos.length > 10) return { error: 'Maximum 10 photos allowed' }
+
+	const { error } = await supabase
+		.from('businesses')
+		.update({ photos })
+		.eq('id', businessId)
+		.eq('owner_id', user.id)
+
+	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/business')
+	return { success: true }
+}
+
 export async function updateBusinessSettings(
 	businessId: string,
 	data: { cancellation_policy?: string; cancellation_hours?: number; auto_confirm?: boolean; buffer_minutes?: number }

@@ -42,6 +42,7 @@ export interface Business {
 	longitude: number | null
 	cover_image_url: string | null
 	logo_url: string | null
+	photos: string[]
 	cancellation_policy: string | null
 	cancellation_hours: number
 	auto_confirm: boolean

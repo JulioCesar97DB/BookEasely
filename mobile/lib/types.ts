@@ -40,6 +40,7 @@ export interface Business {
 	longitude: number | null
 	cover_image_url: string | null
 	logo_url: string | null
+	photos: string[]
 	rating_avg: number
 	rating_count: number
 	is_active: boolean

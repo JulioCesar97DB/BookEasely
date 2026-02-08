@@ -1,5 +1,6 @@
 'use client'
 
+import { BusinessPhotoUpload } from '@/components/business-photo-upload'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -116,7 +117,11 @@ function ProfileTab({ business, categories }: { business: Business; categories: 
 				</CardTitle>
 				<CardDescription>Update your business information visible to clients.</CardDescription>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="space-y-6">
+				<BusinessPhotoUpload businessId={business.id} initialPhotos={business.photos ?? []} />
+
+				<Separator />
+
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 						<div className="grid gap-6 sm:grid-cols-2">
