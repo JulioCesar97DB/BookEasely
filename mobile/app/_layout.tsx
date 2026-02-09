@@ -10,6 +10,7 @@ export default function RootLayout() {
 				<Stack.Screen name="(tabs)" />
 				<Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
 				<Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+				<Stack.Screen name="business/[slug]" options={{ animation: 'slide_from_right' }} />
 			</Stack>
 		</AuthProvider>
 	)

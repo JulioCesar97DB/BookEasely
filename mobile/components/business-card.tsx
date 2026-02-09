@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
-import { StyleSheet, Text, View } from 'react-native'
+import { useRouter } from 'expo-router'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fontSize, radius, spacing } from '../lib/theme'
 import type { BusinessWithCategory } from '../lib/types'
 import { BusinessImageCarousel } from './business-image-carousel'
@@ -10,10 +11,15 @@ interface BusinessCardProps {
 }
 
 export function BusinessCard({ business, width }: BusinessCardProps) {
+	const router = useRouter()
 	const location = [business.city, business.state].filter(Boolean).join(', ')
 
 	return (
-		<View style={[styles.card, { width }]}>
+		<TouchableOpacity
+			style={[styles.card, { width }]}
+			activeOpacity={0.85}
+			onPress={() => router.push(`/business/${business.slug}`)}
+		>
 			<BusinessImageCarousel
 				images={business.photos?.length ? business.photos : (business.cover_image_url ? [business.cover_image_url] : [])}
 				height={width}
@@ -61,7 +67,7 @@ export function BusinessCard({ business, width }: BusinessCardProps) {
 					</View>
 				)}
 			</View>
-		</View>
+		</TouchableOpacity>
 	)
 }
 
