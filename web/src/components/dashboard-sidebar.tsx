@@ -9,6 +9,7 @@ import type { UserRole } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+	Bell,
 	Calendar,
 	CalendarCheck,
 	ChevronsLeft,
@@ -38,6 +39,7 @@ export const clientNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 	{ label: 'My Bookings', href: '/dashboard/bookings', icon: Calendar },
 	{ label: 'Favorites', href: '/dashboard/favorites', icon: Heart },
+	{ label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
 	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
 
@@ -45,6 +47,7 @@ export const workerNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 	{ label: 'My Schedule', href: '/dashboard/my-schedule', icon: Clock },
 	{ label: 'My Bookings', href: '/dashboard/bookings', icon: Calendar },
+	{ label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
 	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
 
@@ -55,6 +58,7 @@ export const businessNav: NavItem[] = [
 	{ label: 'Services', href: '/dashboard/services', icon: ClipboardList },
 	{ label: 'Workers', href: '/dashboard/workers', icon: Users },
 	{ label: 'Reviews', href: '/dashboard/reviews', icon: Star },
+	{ label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
 	{ label: 'Business', href: '/dashboard/business', icon: Store },
 	{ label: 'Discover', href: '/dashboard/discover', icon: Search },
 ]
