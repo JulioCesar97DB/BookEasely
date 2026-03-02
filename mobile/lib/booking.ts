@@ -1,0 +1,144 @@
+// Shared booking logic for mobile - time slot generation
+
+import { supabase } from './supabase'
+
+export interface TimeSlot {
+	start: string // HH:MM
+	end: string   // HH:MM
+}
+
+function timeToMinutes(time: string): number {
+	const parts = time.split(':')
+	return Number(parts[0]) * 60 + Number(parts[1])
+}
+
+function minutesToTime(minutes: number): string {
+	const h = Math.floor(minutes / 60)
+	const m = minutes % 60
+	return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+}
+
+function subtractRange(
+	windows: [number, number][],
+	removeStart: number,
+	removeEnd: number
+): [number, number][] {
+	const result: [number, number][] = []
+	for (const [wStart, wEnd] of windows) {
+		if (removeEnd <= wStart || removeStart >= wEnd) {
+			result.push([wStart, wEnd])
+		} else {
+			if (wStart < removeStart) result.push([wStart, removeStart])
+			if (removeEnd < wEnd) result.push([removeEnd, wEnd])
+		}
+	}
+	return result
+}
+
+export async function getAvailableSlots({
+	businessId,
+	serviceId,
+	workerId,
+	date,
+}: {
+	businessId: string
+	serviceId: string
+	workerId: string
+	date: string
+}): Promise<TimeSlot[]> {
+	const [{ data: service }, { data: business }, { data: availability }, { data: bookings }, { data: blocked }] =
+		await Promise.all([
+			supabase.from('services').select('duration_minutes').eq('id', serviceId).single(),
+			supabase.from('businesses').select('buffer_minutes').eq('id', businessId).single(),
+			supabase.from('worker_availability').select('start_time, end_time').eq('worker_id', workerId).eq('day_of_week', new Date(date + 'T12:00:00').getDay()).eq('is_active', true),
+			supabase.from('bookings').select('start_time, end_time').eq('worker_id', workerId).eq('date', date).in('status', ['pending', 'confirmed']),
+			supabase.from('worker_blocked_dates').select('date, start_time, end_time').eq('worker_id', workerId).eq('date', date),
+		])
+
+	if (!service || !availability || availability.length === 0) return []
+
+	const durationMinutes = service.duration_minutes
+	const bufferMinutes = business?.buffer_minutes ?? 0
+
+	let freeWindows: [number, number][] = availability.map((a) => [
+		timeToMinutes(a.start_time),
+		timeToMinutes(a.end_time),
+	])
+
+	// Check full-day block
+	if (blocked?.some((b) => b.date === date && !b.start_time && !b.end_time)) return []
+
+	// Subtract partial blocks
+	for (const b of blocked ?? []) {
+		if (b.date !== date || !b.start_time || !b.end_time) continue
+		freeWindows = subtractRange(freeWindows, timeToMinutes(b.start_time), timeToMinutes(b.end_time))
+	}
+
+	// Subtract existing bookings
+	for (const bk of bookings ?? []) {
+		freeWindows = subtractRange(freeWindows, timeToMinutes(bk.start_time) - bufferMinutes, timeToMinutes(bk.end_time) + bufferMinutes)
+	}
+
+	const slots: TimeSlot[] = []
+	for (const [wStart, wEnd] of freeWindows) {
+		let s = wStart
+		while (s + durationMinutes <= wEnd) {
+			slots.push({ start: minutesToTime(s), end: minutesToTime(s + durationMinutes) })
+			s += durationMinutes + bufferMinutes
+		}
+	}
+	return slots
+}
+
+export async function createBooking({
+	businessId,
+	serviceId,
+	workerId,
+	date,
+	startTime,
+	endTime,
+	note,
+}: {
+	businessId: string
+	serviceId: string
+	workerId: string
+	date: string
+	startTime: string
+	endTime: string
+	note?: string
+}): Promise<{ bookingId?: string; error?: string }> {
+	const { data: { user } } = await supabase.auth.getUser()
+	if (!user) return { error: 'Not authenticated' }
+
+	// Verify slot still available
+	const slots = await getAvailableSlots({ businessId, serviceId, workerId, date })
+	if (!slots.some((s) => s.start === startTime && s.end === endTime)) {
+		return { error: 'This time slot is no longer available.' }
+	}
+
+	const { data: business } = await supabase.from('businesses').select('auto_confirm').eq('id', businessId).single()
+	const status = business?.auto_confirm ? 'confirmed' : 'pending'
+
+	const { data, error } = await supabase
+		.from('bookings')
+		.insert({ client_id: user.id, business_id: businessId, worker_id: workerId, service_id: serviceId, date, start_time: startTime, end_time: endTime, status, note: note || null })
+		.select('id')
+		.single()
+
+	if (error) return { error: error.message }
+	return { bookingId: data.id }
+}
+
+export function formatTime(time: string): string {
+	const [h, m] = time.split(':').map(Number)
+	const ampm = h >= 12 ? 'PM' : 'AM'
+	const hour = h % 12 || 12
+	return m === 0 ? `${hour}:00 ${ampm}` : `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
+}
+
+export function formatDuration(minutes: number): string {
+	if (minutes < 60) return `${minutes}min`
+	const h = Math.floor(minutes / 60)
+	const m = minutes % 60
+	return m > 0 ? `${h}h ${m}min` : `${h}h`
+}
