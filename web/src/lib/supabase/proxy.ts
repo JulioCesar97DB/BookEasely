@@ -62,12 +62,17 @@ export async function updateSession(request: NextRequest) {
 		return supabaseResponse
 	}
 
-	// Auth routes (login, signup, reset) — redirect logged-in users to dashboard
+	// Auth routes (login, signup, reset) — redirect logged-in users to discover
 	if (isAuthRoute(pathname)) {
 		if (user) {
-			return redirectWithCookies(request, '/dashboard', supabaseResponse)
+			return redirectWithCookies(request, '/dashboard/discover', supabaseResponse)
 		}
 		return supabaseResponse
+	}
+
+	// Root route — redirect logged-in users to discover (like mobile)
+	if (pathname === '/' && user) {
+		return redirectWithCookies(request, '/dashboard/discover', supabaseResponse)
 	}
 
 	// Public routes — always accessible

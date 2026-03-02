@@ -47,7 +47,7 @@ export async function signIn(formData: FormData) {
 		return { error: error.message }
 	}
 
-	redirect('/dashboard')
+	redirect('/dashboard/discover')
 }
 
 export async function signInWithGoogle() {
@@ -100,7 +100,7 @@ export async function updatePassword(formData: FormData) {
 		return { error: error.message }
 	}
 
-	redirect('/dashboard')
+	redirect('/dashboard/discover')
 }
 
 export async function signOut() {
