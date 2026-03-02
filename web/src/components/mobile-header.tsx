@@ -7,13 +7,13 @@ import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import type { UserRole } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { CalendarCheck, LogOut, Menu, Settings } from 'lucide-react'
+import { Bell, CalendarCheck, LogOut, Menu, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { getNavForRole } from './dashboard-sidebar'
 
-export function MobileHeader({ role, userName, isWorker }: { role: UserRole; userName: string; isWorker?: boolean }) {
+export function MobileHeader({ role, userName, isWorker, unreadCount = 0 }: { role: UserRole; userName: string; isWorker?: boolean; unreadCount?: number }) {
 	const [open, setOpen] = useState(false)
 	const pathname = usePathname()
 	const nav = getNavForRole(role, isWorker)
@@ -35,6 +35,19 @@ export function MobileHeader({ role, userName, isWorker }: { role: UserRole; use
 					<CalendarCheck className="h-4 w-4 text-primary-foreground" />
 				</div>
 				<span className="text-base font-semibold tracking-tight">BookEasely</span>
+			</Link>
+
+			{/* Notification bell */}
+			<Link
+				href="/dashboard/notifications"
+				className="ml-auto relative flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+			>
+				<Bell className="h-5 w-5" />
+				{unreadCount > 0 && (
+					<span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+						{unreadCount > 99 ? '99+' : unreadCount}
+					</span>
+				)}
 			</Link>
 
 			{/* Drawer */}

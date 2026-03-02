@@ -74,7 +74,7 @@ const subscribe = () => () => { }
 const getSnapshot = () => localStorage.getItem('sidebar-collapsed') === 'true'
 const getServerSnapshot = () => false
 
-export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole; userName: string; isWorker?: boolean }) {
+export function DashboardSidebar({ role, userName, isWorker, unreadCount = 0 }: { role: UserRole; userName: string; isWorker?: boolean; unreadCount?: number }) {
 	const pathname = usePathname()
 	const nav = role === 'business_owner' ? businessNav : isWorker ? workerNav : clientNav
 
@@ -97,7 +97,7 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 	return (
 		<TooltipProvider>
 			<motion.aside
-				className="relative hidden md:flex h-svh sticky top-0 flex-col border-r bg-sidebar overflow-visible"
+				className="relative hidden md:flex h-svh top-0 flex-col border-r bg-sidebar overflow-visible"
 				animate={{ width: effectiveCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
 				transition={hasInteracted ? { duration: 0.2, ease: 'easeInOut' } : { duration: 0 }}
 				style={{ flexShrink: 0 }}
@@ -144,12 +144,14 @@ export function DashboardSidebar({ role, userName, isWorker }: { role: UserRole;
 				<nav className={cn('flex-1 space-y-1 py-4 overflow-hidden', effectiveCollapsed ? 'px-2' : 'px-3')}>
 					{nav.map((item) => {
 						const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+						const badge = item.href === '/dashboard/notifications' ? unreadCount : 0
 						return (
 							<NavLink
 								key={item.href}
 								item={item}
 								isActive={isActive}
 								collapsed={effectiveCollapsed}
+								badge={badge}
 							/>
 						)
 					})}
@@ -222,10 +224,12 @@ function NavLink({
 	item,
 	isActive,
 	collapsed,
+	badge = 0,
 }: {
 	item: NavItem
 	isActive: boolean
 	collapsed: boolean
+	badge?: number
 }) {
 	const content = (
 		<Link
@@ -245,7 +249,14 @@ function NavLink({
 					transition={{ type: 'spring', stiffness: 350, damping: 30 }}
 				/>
 			)}
-			<item.icon className="relative h-4 w-4 shrink-0" />
+			<span className="relative shrink-0">
+				<item.icon className="h-4 w-4" />
+				{badge > 0 && collapsed && (
+					<span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+						{badge > 99 ? '99+' : badge}
+					</span>
+				)}
+			</span>
 			<AnimatePresence>
 				{!collapsed && (
 					<motion.span
@@ -259,6 +270,11 @@ function NavLink({
 					</motion.span>
 				)}
 			</AnimatePresence>
+			{badge > 0 && !collapsed && (
+				<span className="relative ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+					{badge > 99 ? '99+' : badge}
+				</span>
+			)}
 		</Link>
 	)
 

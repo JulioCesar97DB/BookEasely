@@ -10,10 +10,12 @@ export default function TabsLayout() {
 	const isBusinessOwner = profile?.role === 'business_owner' ||
 		user?.user_metadata?.role === 'business_owner'
 	const [isWorker, setIsWorker] = useState(false)
+	const [unreadCount, setUnreadCount] = useState(0)
 
 	useEffect(() => {
 		if (!user) {
 			setIsWorker(false)
+			setUnreadCount(0)
 			return
 		}
 		async function checkWorkerStatus() {
@@ -24,7 +26,16 @@ export default function TabsLayout() {
 				.eq('is_active', true)
 			setIsWorker((count ?? 0) > 0)
 		}
+		async function fetchUnreadCount() {
+			const { count } = await supabase
+				.from('notifications')
+				.select('id', { count: 'exact', head: true })
+				.eq('user_id', user!.id)
+				.eq('is_read', false)
+			setUnreadCount(count ?? 0)
+		}
 		checkWorkerStatus()
+		fetchUnreadCount()
 	}, [user])
 
 	return (
@@ -62,6 +73,8 @@ export default function TabsLayout() {
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="calendar-outline" size={size} color={color} />
 					),
+					tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
+					tabBarBadgeStyle: { backgroundColor: colors.destructive, fontSize: 10 },
 				}}
 			/>
 			<Tabs.Screen
