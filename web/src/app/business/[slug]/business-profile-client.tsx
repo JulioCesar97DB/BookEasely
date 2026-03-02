@@ -32,7 +32,6 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 interface ReviewWithProfile extends Review {
 	profiles: { full_name: string; avatar_url: string | null } | null
@@ -145,14 +144,8 @@ export function BusinessProfileClient({
 	)
 
 	const bookingUrl = isAuthenticated
-		? undefined
-		: `/auth/login?next=/business/${business.slug}`
-
-	function handleBookNow() {
-		if (isAuthenticated) {
-			toast.info('Booking flow coming soon!')
-		}
-	}
+		? `/book/${business.slug}`
+		: `/auth/login?next=/book/${business.slug}`
 
 	return (
 		<PageTransition>
@@ -250,15 +243,9 @@ export function BusinessProfileClient({
 							)}
 						</div>
 						<div className="hidden sm:block">
-							{isAuthenticated ? (
-								<Button size="lg" onClick={handleBookNow}>
-									Book Now
-								</Button>
-							) : (
-								<Button size="lg" asChild>
-									<Link href={bookingUrl!}>Book Now</Link>
-								</Button>
-							)}
+							<Button size="lg" asChild>
+								<Link href={bookingUrl}>Book Now</Link>
+							</Button>
 						</div>
 					</div>
 				</div>
@@ -341,15 +328,9 @@ export function BusinessProfileClient({
 
 			{/* Sticky Mobile Book Now */}
 			<div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur-sm p-4 sm:hidden z-40">
-				{isAuthenticated ? (
-					<Button className="w-full" size="lg" onClick={handleBookNow}>
-						Book Now
-					</Button>
-				) : (
-					<Button className="w-full" size="lg" asChild>
-						<Link href={bookingUrl!}>Book Now</Link>
-					</Button>
-				)}
+				<Button className="w-full" size="lg" asChild>
+					<Link href={bookingUrl}>Book Now</Link>
+				</Button>
 			</div>
 		</PageTransition>
 	)
