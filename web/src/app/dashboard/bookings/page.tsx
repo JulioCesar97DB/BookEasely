@@ -15,6 +15,8 @@ interface BookingRow {
 	status: string
 	note: string | null
 	business_id: string
+	service_id: string
+	worker_id: string
 	services: { name: string; duration_minutes: number; price: number } | null
 	businesses: { name: string; slug: string } | null
 	profiles: { full_name: string } | null
@@ -48,14 +50,14 @@ export default async function BookingsPage() {
 	const [{ data: rawClientBookings }, workerBookingsResult] = await Promise.all([
 		supabase
 			.from('bookings')
-			.select('id, date, start_time, end_time, status, note, business_id, services(name, duration_minutes, price), businesses(name, slug), workers(display_name), reviews(id)')
+			.select('id, date, start_time, end_time, status, note, business_id, service_id, worker_id, services(name, duration_minutes, price), businesses(name, slug), workers(display_name), reviews(id)')
 			.eq('client_id', userId)
 			.order('date', { ascending: false })
 			.limit(50),
 		workerIds.length > 0
 			? supabase
 				.from('bookings')
-				.select('id, date, start_time, end_time, status, note, business_id, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name), reviews(id)')
+				.select('id, date, start_time, end_time, status, note, business_id, service_id, worker_id, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name), reviews(id)')
 				.in('worker_id', workerIds)
 				.order('date', { ascending: false })
 				.limit(50)
@@ -153,6 +155,7 @@ function BookingCard({
 }) {
 	const canConfirm = isWorkerView && booking.status === 'pending'
 	const canComplete = isWorkerView && booking.status === 'confirmed'
+	const canReschedule = !isWorkerView && (booking.status === 'pending' || booking.status === 'confirmed') && !isPast
 	const canCancel = !isWorkerView && (booking.status === 'pending' || booking.status === 'confirmed') && !isPast
 	const canReview = !isWorkerView && booking.status === 'completed' && (!booking.reviews || booking.reviews.length === 0)
 
@@ -184,9 +187,12 @@ function BookingCard({
 					<BookingActions
 						bookingId={booking.id}
 						businessId={booking.business_id}
+						serviceId={booking.service_id}
+						workerId={booking.worker_id}
 						canConfirm={canConfirm}
 						canComplete={canComplete}
 						canCancel={canCancel}
+						canReschedule={canReschedule}
 						canReview={canReview}
 					/>
 					<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[booking.status] ?? ''}`}>
