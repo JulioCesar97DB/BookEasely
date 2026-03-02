@@ -15,7 +15,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../lib/auth-context'
-import { createBooking, formatDuration, formatTime, getAvailableSlots, type TimeSlot } from '../../lib/booking'
+import { createBooking, formatDuration, formatTime, getAvailableSlots, getAvailableSlotsAnyWorker, type TimeSlot } from '../../lib/booking'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 import type { Service, Worker } from '../../lib/types'
@@ -46,6 +46,8 @@ export default function BookScreen() {
 	const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
 	const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
 	const [loadingSlots, setLoadingSlots] = useState(false)
+	const [anyWorkerMode, setAnyWorkerMode] = useState(false)
+	const [slotWorkerMap, setSlotWorkerMap] = useState<Map<string, { workerId: string; workerName: string }>>(new Map())
 	const [note, setNote] = useState('')
 	const [submitting, setSubmitting] = useState(false)
 
@@ -103,22 +105,43 @@ export default function BookScreen() {
 	}, [])
 
 	const handleSelectDate = useCallback(async (date: string) => {
-		if (!businessId || !selectedService || !selectedWorker) return
+		if (!businessId || !selectedService) return
+		if (!anyWorkerMode && !selectedWorker) return
 		setSelectedDate(date)
 		setSelectedSlot(null)
 		setLoadingSlots(true)
-		const slots = await getAvailableSlots({
-			businessId, serviceId: selectedService.id, workerId: selectedWorker.id, date,
-		})
-		setAvailableSlots(slots)
+
+		if (anyWorkerMode) {
+			const { slots } = await getAvailableSlotsAnyWorker({ businessId, serviceId: selectedService.id, date })
+			const map = new Map<string, { workerId: string; workerName: string }>()
+			const timeSlots: TimeSlot[] = []
+			for (const slot of slots) {
+				map.set(slot.start, { workerId: slot.workerId, workerName: slot.workerName })
+				timeSlots.push({ start: slot.start, end: slot.end })
+			}
+			setSlotWorkerMap(map)
+			setAvailableSlots(timeSlots)
+		} else {
+			const slots = await getAvailableSlots({
+				businessId, serviceId: selectedService.id, workerId: selectedWorker!.id, date,
+			})
+			setAvailableSlots(slots)
+		}
 		setLoadingSlots(false)
-	}, [businessId, selectedService, selectedWorker])
+	}, [businessId, selectedService, selectedWorker, anyWorkerMode])
+
+	const resolvedWorkerId = anyWorkerMode && selectedSlot
+		? slotWorkerMap.get(selectedSlot.start)?.workerId ?? null
+		: selectedWorker?.id ?? null
+	const resolvedWorkerName = anyWorkerMode && selectedSlot
+		? slotWorkerMap.get(selectedSlot.start)?.workerName ?? 'Available professional'
+		: selectedWorker?.display_name ?? ''
 
 	const handleConfirm = useCallback(async () => {
-		if (!businessId || !selectedService || !selectedWorker || !selectedDate || !selectedSlot) return
+		if (!businessId || !selectedService || !resolvedWorkerId || !selectedDate || !selectedSlot) return
 		setSubmitting(true)
 		const result = await createBooking({
-			businessId, serviceId: selectedService.id, workerId: selectedWorker.id,
+			businessId, serviceId: selectedService.id, workerId: resolvedWorkerId,
 			date: selectedDate, startTime: selectedSlot.start, endTime: selectedSlot.end,
 			note: note || undefined,
 		})
@@ -128,7 +151,7 @@ export default function BookScreen() {
 		} else {
 			setStep('success')
 		}
-	}, [businessId, selectedService, selectedWorker, selectedDate, selectedSlot, note])
+	}, [businessId, selectedService, resolvedWorkerId, selectedDate, selectedSlot, note])
 
 	if (isLoading) {
 		return (
@@ -156,7 +179,7 @@ export default function BookScreen() {
 					<View style={styles.summaryCard}>
 						<SummaryRow label="Business" value={businessName} />
 						<SummaryRow label="Service" value={selectedService?.name ?? ''} />
-						<SummaryRow label="Professional" value={selectedWorker?.display_name ?? ''} />
+						<SummaryRow label="Professional" value={resolvedWorkerName || 'Assigned professional'} />
 						<SummaryRow label="Date" value={selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''} />
 						<SummaryRow label="Time" value={selectedSlot ? `${formatTime(selectedSlot.start)} - ${formatTime(selectedSlot.end)}` : ''} />
 					</View>
@@ -221,12 +244,29 @@ export default function BookScreen() {
 					<>
 						<Text style={styles.stepTitle}>Select a Professional</Text>
 						<Text style={styles.stepSubtitle}>For: {selectedService?.name}</Text>
+						{availableWorkers.length >= 2 && (
+							<TouchableOpacity
+								style={styles.optionCard}
+								activeOpacity={0.7}
+								onPress={() => { setAnyWorkerMode(true); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setSlotWorkerMap(new Map()); setStep('datetime') }}
+							>
+								<View style={styles.workerRow}>
+									<View style={[styles.workerAvatar, { backgroundColor: colors.primaryLight }]}>
+										<Ionicons name="shuffle" size={20} color={colors.primary} />
+									</View>
+									<View style={styles.optionInfo}>
+										<Text style={styles.optionName}>Any available professional</Text>
+										<Text style={styles.optionDesc}>We'll find the best time for you</Text>
+									</View>
+								</View>
+							</TouchableOpacity>
+						)}
 						{availableWorkers.map((worker) => (
 							<TouchableOpacity
 								key={worker.id}
 								style={styles.optionCard}
 								activeOpacity={0.7}
-								onPress={() => { setSelectedWorker(worker); setSelectedDate(null); setSelectedSlot(null); setStep('datetime') }}
+								onPress={() => { setAnyWorkerMode(false); setSelectedWorker(worker); setSelectedDate(null); setSelectedSlot(null); setStep('datetime') }}
 							>
 								<View style={styles.workerRow}>
 									<View style={styles.workerAvatar}>
@@ -249,7 +289,7 @@ export default function BookScreen() {
 				{step === 'datetime' && (
 					<>
 						<Text style={styles.stepTitle}>Select Date & Time</Text>
-						<Text style={styles.stepSubtitle}>{selectedService?.name} with {selectedWorker?.display_name}</Text>
+						<Text style={styles.stepSubtitle}>{selectedService?.name} with {anyWorkerMode ? 'any available professional' : selectedWorker?.display_name}</Text>
 
 						{/* Date Chips */}
 						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateChips}>
@@ -303,13 +343,13 @@ export default function BookScreen() {
 					</>
 				)}
 
-				{step === 'confirm' && selectedService && selectedWorker && selectedDate && selectedSlot && (
+				{step === 'confirm' && selectedService && resolvedWorkerId && selectedDate && selectedSlot && (
 					<>
 						<Text style={styles.stepTitle}>Confirm Booking</Text>
 						<View style={styles.summaryCard}>
 							<SummaryRow label="Business" value={businessName} />
 							<SummaryRow label="Service" value={selectedService.name} />
-							<SummaryRow label="Professional" value={selectedWorker.display_name} />
+							<SummaryRow label="Professional" value={resolvedWorkerName} />
 							<SummaryRow label="Date" value={new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} />
 							<SummaryRow label="Time" value={`${formatTime(selectedSlot.start)} - ${formatTime(selectedSlot.end)}`} />
 							<SummaryRow label="Duration" value={formatDuration(selectedService.duration_minutes)} />

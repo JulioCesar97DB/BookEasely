@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { createBooking, getAvailableSlots } from '@/lib/booking/actions'
+import { createBooking, getAvailableSlots, getAvailableSlotsAnyWorker } from '@/lib/booking/actions'
 import type { TimeSlot } from '@/lib/booking/time-slots'
 import type { BusinessWithCategory, Service, Worker } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -17,6 +17,7 @@ import {
 	CheckCircle2,
 	Clock,
 	Loader2,
+	Shuffle,
 	User,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -55,13 +56,14 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 	const [step, setStep] = useState<Step>('service')
 	const [selectedService, setSelectedService] = useState<Service | null>(null)
 	const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null)
+	const [anyWorkerMode, setAnyWorkerMode] = useState(false)
+	const [slotWorkerMap, setSlotWorkerMap] = useState<Map<string, { workerId: string; workerName: string }>>(new Map())
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
 	const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
 	const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
 	const [loadingSlots, setLoadingSlots] = useState(false)
 	const [note, setNote] = useState('')
 	const [bookingComplete, setBookingComplete] = useState(false)
-	const [bookingId, setBookingId] = useState<string | null>(null)
 	const [isPending, startTransition] = useTransition()
 
 	const currentStepIndex = STEPS.indexOf(step)
@@ -93,29 +95,55 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 
 	const handleSelectWorker = (worker: Worker) => {
 		setSelectedWorker(worker)
+		setAnyWorkerMode(false)
 		setSelectedDate(undefined)
 		setSelectedSlot(null)
+		setSlotWorkerMap(new Map())
+		setStep('datetime')
+	}
+
+	const handleSelectAnyWorker = () => {
+		setSelectedWorker(null)
+		setAnyWorkerMode(true)
+		setSelectedDate(undefined)
+		setSelectedSlot(null)
+		setSlotWorkerMap(new Map())
 		setStep('datetime')
 	}
 
 	const handleSelectDate = useCallback(async (date: Date | undefined) => {
-		if (!date || !selectedWorker || !selectedService) return
+		if (!date || !selectedService) return
+		if (!anyWorkerMode && !selectedWorker) return
 		setSelectedDate(date)
 		setSelectedSlot(null)
 		setLoadingSlots(true)
 
 		const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
 
-		const result = await getAvailableSlots({
-			businessId: business.id,
-			serviceId: selectedService.id,
-			workerId: selectedWorker.id,
-			date: dateStr,
-		})
+		if (anyWorkerMode) {
+			const result = await getAvailableSlotsAnyWorker({
+				businessId: business.id,
+				serviceId: selectedService.id,
+				date: dateStr,
+			})
+			const map = new Map<string, { workerId: string; workerName: string }>()
+			for (const slot of result.slots) {
+				map.set(slot.start, { workerId: slot.workerId, workerName: slot.workerName })
+			}
+			setSlotWorkerMap(map)
+			setAvailableSlots(result.slots)
+		} else {
+			const result = await getAvailableSlots({
+				businessId: business.id,
+				serviceId: selectedService.id,
+				workerId: selectedWorker!.id,
+				date: dateStr,
+			})
+			setAvailableSlots(result.slots)
+		}
 
-		setAvailableSlots(result.slots)
 		setLoadingSlots(false)
-	}, [selectedWorker, selectedService, business.id])
+	}, [selectedWorker, selectedService, business.id, anyWorkerMode])
 
 	const handleSelectSlot = (slot: TimeSlot) => {
 		setSelectedSlot(slot)
@@ -129,8 +157,16 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 		}
 	}
 
+	const resolvedWorkerId = anyWorkerMode && selectedSlot
+		? slotWorkerMap.get(selectedSlot.start)?.workerId ?? ''
+		: selectedWorker?.id ?? ''
+
+	const resolvedWorkerName = anyWorkerMode && selectedSlot
+		? slotWorkerMap.get(selectedSlot.start)?.workerName ?? 'Any available'
+		: selectedWorker?.display_name ?? ''
+
 	const handleConfirm = () => {
-		if (!selectedService || !selectedWorker || !selectedDate || !selectedSlot) return
+		if (!selectedService || !resolvedWorkerId || !selectedDate || !selectedSlot) return
 
 		startTransition(async () => {
 			const dateStr = `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`
@@ -138,7 +174,7 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 			const result = await createBooking({
 				businessId: business.id,
 				serviceId: selectedService.id,
-				workerId: selectedWorker.id,
+				workerId: resolvedWorkerId,
 				date: dateStr,
 				startTime: selectedSlot.start,
 				endTime: selectedSlot.end,
@@ -148,7 +184,6 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 			if (result.error) {
 				toast.error(result.error)
 			} else {
-				setBookingId(result.bookingId ?? null)
 				setBookingComplete(true)
 			}
 		})
@@ -177,7 +212,7 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 					</div>
 					<div className="flex justify-between">
 						<span className="text-muted-foreground">Worker</span>
-						<span className="font-medium">{selectedWorker?.display_name}</span>
+						<span className="font-medium">{resolvedWorkerName}</span>
 					</div>
 					<div className="flex justify-between">
 						<span className="text-muted-foreground">Date</span>
@@ -293,35 +328,53 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 							</CardContent>
 						</Card>
 					) : (
-						availableWorkers.map((worker) => (
-							<Card
-								key={worker.id}
-								className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm py-0"
-								onClick={() => handleSelectWorker(worker)}
-							>
-								<CardContent className="flex items-center gap-3 p-4">
-									<Avatar className="h-10 w-10">
-										<AvatarImage src={worker.avatar_url ?? undefined} />
-										<AvatarFallback className="text-xs">{getInitials(worker.display_name)}</AvatarFallback>
-									</Avatar>
-									<div className="flex-1 min-w-0">
-										<h3 className="font-medium text-sm">{worker.display_name}</h3>
-										{worker.bio && (
-											<p className="text-xs text-muted-foreground line-clamp-1">{worker.bio}</p>
-										)}
-										{worker.specialties && worker.specialties.length > 0 && (
-											<div className="flex gap-1 mt-1 flex-wrap">
-												{worker.specialties.slice(0, 3).map((s) => (
-													<Badge key={s} variant="secondary" className="text-[10px] px-1.5 py-0">
-														{s}
-													</Badge>
-												))}
-											</div>
-										)}
-									</div>
-								</CardContent>
-							</Card>
-						))
+						<>
+							{availableWorkers.length > 1 && (
+								<Card
+									className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm py-0 border-dashed"
+									onClick={handleSelectAnyWorker}
+								>
+									<CardContent className="flex items-center gap-3 p-4">
+										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+											<Shuffle className="h-5 w-5 text-primary" />
+										</div>
+										<div className="flex-1 min-w-0">
+											<h3 className="font-medium text-sm">Any available professional</h3>
+											<p className="text-xs text-muted-foreground">We&apos;ll pick whoever has the best availability</p>
+										</div>
+									</CardContent>
+								</Card>
+							)}
+							{availableWorkers.map((worker) => (
+								<Card
+									key={worker.id}
+									className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm py-0"
+									onClick={() => handleSelectWorker(worker)}
+								>
+									<CardContent className="flex items-center gap-3 p-4">
+										<Avatar className="h-10 w-10">
+											<AvatarImage src={worker.avatar_url ?? undefined} />
+											<AvatarFallback className="text-xs">{getInitials(worker.display_name)}</AvatarFallback>
+										</Avatar>
+										<div className="flex-1 min-w-0">
+											<h3 className="font-medium text-sm">{worker.display_name}</h3>
+											{worker.bio && (
+												<p className="text-xs text-muted-foreground line-clamp-1">{worker.bio}</p>
+											)}
+											{worker.specialties && worker.specialties.length > 0 && (
+												<div className="flex gap-1 mt-1 flex-wrap">
+													{worker.specialties.slice(0, 3).map((s) => (
+														<Badge key={s} variant="secondary" className="text-[10px] px-1.5 py-0">
+															{s}
+														</Badge>
+													))}
+												</div>
+											)}
+										</div>
+									</CardContent>
+								</Card>
+							))}
+						</>
 					)}
 				</div>
 			)}
@@ -336,7 +389,7 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 						</Button>
 					</div>
 					<p className="text-sm text-muted-foreground">
-						{selectedService?.name} with {selectedWorker?.display_name}
+						{selectedService?.name} with {anyWorkerMode ? 'any available professional' : selectedWorker?.display_name}
 					</p>
 
 					<div className="grid gap-6 lg:grid-cols-2">
@@ -407,7 +460,7 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 				</div>
 			)}
 
-			{step === 'confirm' && selectedService && selectedWorker && selectedDate && selectedSlot && (
+			{step === 'confirm' && selectedService && (selectedWorker || anyWorkerMode) && selectedDate && selectedSlot && (
 				<div className="space-y-4">
 					<div className="flex items-center justify-between">
 						<h2 className="text-lg font-semibold">Confirm Booking</h2>
@@ -431,11 +484,17 @@ export function BookingFlow({ business, services, workers, serviceWorkers }: Boo
 								<div className="flex justify-between items-center">
 									<span className="text-sm text-muted-foreground">Professional</span>
 									<div className="flex items-center gap-2">
-										<Avatar className="h-5 w-5">
-											<AvatarImage src={selectedWorker.avatar_url ?? undefined} />
-											<AvatarFallback className="text-[8px]">{getInitials(selectedWorker.display_name)}</AvatarFallback>
-										</Avatar>
-										<span className="text-sm font-medium">{selectedWorker.display_name}</span>
+										{selectedWorker ? (
+											<Avatar className="h-5 w-5">
+												<AvatarImage src={selectedWorker.avatar_url ?? undefined} />
+												<AvatarFallback className="text-[8px]">{getInitials(selectedWorker.display_name)}</AvatarFallback>
+											</Avatar>
+										) : (
+											<div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10">
+												<Shuffle className="h-3 w-3 text-primary" />
+											</div>
+										)}
+										<span className="text-sm font-medium">{resolvedWorkerName}</span>
 									</div>
 								</div>
 								<div className="flex justify-between items-center">

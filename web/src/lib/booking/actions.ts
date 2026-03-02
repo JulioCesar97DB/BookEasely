@@ -129,6 +129,36 @@ export async function getAvailableWorkers({
 	return { workers: result.filter((w) => w.slotCount > 0) }
 }
 
+// ── Get available slots across ALL workers for a service + date ─────
+
+export async function getAvailableSlotsAnyWorker({
+	businessId,
+	serviceId,
+	date,
+}: {
+	businessId: string
+	serviceId: string
+	date: string
+}): Promise<{ slots: (TimeSlot & { workerId: string; workerName: string })[] }> {
+	const { workers } = await getAvailableWorkers({ businessId, serviceId, date })
+
+	const allSlots: (TimeSlot & { workerId: string; workerName: string })[] = []
+	const seenTimes = new Set<string>()
+
+	for (const worker of workers) {
+		const { slots } = await getAvailableSlots({ businessId, serviceId, workerId: worker.id, date })
+		for (const slot of slots) {
+			if (!seenTimes.has(slot.start)) {
+				seenTimes.add(slot.start)
+				allSlots.push({ ...slot, workerId: worker.id, workerName: worker.display_name })
+			}
+		}
+	}
+
+	allSlots.sort((a, b) => a.start.localeCompare(b.start))
+	return { slots: allSlots }
+}
+
 // ── Create a booking ────────────────────────────────────────────────
 
 export async function createBooking({
@@ -226,6 +256,81 @@ export async function cancelBooking({
 			status: 'cancelled',
 			cancelled_by: user.id,
 			cancellation_reason: reason || null,
+			updated_at: new Date().toISOString(),
+		})
+		.eq('id', bookingId)
+
+	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/bookings')
+	return {}
+}
+
+// ── Reschedule a booking ────────────────────────────────────────────
+
+export async function rescheduleBooking({
+	bookingId,
+	workerId,
+	date,
+	startTime,
+	endTime,
+}: {
+	bookingId: string
+	workerId: string
+	date: string
+	startTime: string
+	endTime: string
+}): Promise<{ error?: string }> {
+	const supabase = await createClient()
+
+	const { data: { user } } = await supabase.auth.getUser()
+	if (!user) return { error: 'Not authenticated' }
+
+	// Get original booking
+	const { data: booking } = await supabase
+		.from('bookings')
+		.select('business_id, service_id, status')
+		.eq('id', bookingId)
+		.single()
+
+	if (!booking) return { error: 'Booking not found' }
+	if (booking.status === 'cancelled' || booking.status === 'completed' || booking.status === 'no_show') {
+		return { error: 'Cannot reschedule a booking that is already ' + booking.status }
+	}
+
+	// Verify the new slot is available
+	const { slots } = await getAvailableSlots({
+		businessId: booking.business_id,
+		serviceId: booking.service_id,
+		workerId,
+		date,
+	})
+
+	const slotAvailable = slots.some(
+		(s) => s.start === startTime && s.end === endTime
+	)
+
+	if (!slotAvailable) {
+		return { error: 'This time slot is no longer available.' }
+	}
+
+	// Check auto_confirm
+	const { data: business } = await supabase
+		.from('businesses')
+		.select('auto_confirm')
+		.eq('id', booking.business_id)
+		.single()
+
+	const status = business?.auto_confirm ? 'confirmed' : 'pending'
+
+	const { error } = await supabase
+		.from('bookings')
+		.update({
+			worker_id: workerId,
+			date,
+			start_time: startTime,
+			end_time: endTime,
+			status,
 			updated_at: new Date().toISOString(),
 		})
 		.eq('id', bookingId)
