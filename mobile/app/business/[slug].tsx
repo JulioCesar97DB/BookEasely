@@ -167,9 +167,10 @@ export default function BusinessProfileScreen() {
 	const handleBookNow = useCallback(() => {
 		if (!user) {
 			router.push('/(auth)/login')
+			return
 		}
-		// Booking flow not built yet
-	}, [user, router])
+		router.push(`/book/${slug}`)
+	}, [user, router, slug])
 
 	if (isLoading) {
 		return (

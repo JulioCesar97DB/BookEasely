@@ -114,9 +114,11 @@ export default function ProfileScreen() {
 							onPress={() => router.push('/(tabs)/my-work' as never)}
 						/>
 					)}
-					<MenuItem icon="notifications-outline" label="Notifications" />
-					<MenuItem icon="shield-checkmark-outline" label="Privacy & Security" />
-					<MenuItem icon="help-circle-outline" label="Help & Support" />
+					<MenuItem
+						icon="notifications-outline"
+						label="Notifications"
+						onPress={() => router.push('/(tabs)/bookings' as never)}
+					/>
 				</View>
 
 				<TouchableOpacity

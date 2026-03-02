@@ -40,26 +40,11 @@ const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 	other: 'grid-outline',
 }
 
-const defaultCategories: Category[] = [
-	{ id: '1', name: 'Barbershop', slug: 'barbershop', icon_url: null, sort_order: 1 },
-	{ id: '2', name: 'Hair Salon', slug: 'hair-salon', icon_url: null, sort_order: 2 },
-	{ id: '3', name: 'Nail Salon', slug: 'nail-salon', icon_url: null, sort_order: 3 },
-	{ id: '4', name: 'Spa & Massage', slug: 'spa-massage', icon_url: null, sort_order: 4 },
-	{ id: '5', name: 'Fitness', slug: 'fitness-training', icon_url: null, sort_order: 5 },
-	{ id: '6', name: 'Medical', slug: 'medical-dental', icon_url: null, sort_order: 6 },
-	{ id: '7', name: 'Beauty', slug: 'beauty-aesthetics', icon_url: null, sort_order: 7 },
-	{ id: '8', name: 'Pet Services', slug: 'pet-services', icon_url: null, sort_order: 8 },
-	{ id: '9', name: 'Photography', slug: 'photography', icon_url: null, sort_order: 9 },
-	{ id: '10', name: 'Tutoring', slug: 'tutoring-education', icon_url: null, sort_order: 10 },
-	{ id: '11', name: 'Auto Services', slug: 'auto-services', icon_url: null, sort_order: 11 },
-	{ id: '12', name: 'Home Services', slug: 'home-services', icon_url: null, sort_order: 12 },
-]
-
 export default function DiscoverScreen() {
 	const { user } = useAuth()
 	const [searchQuery, setSearchQuery] = useState('')
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-	const [categories, setCategories] = useState<Category[]>(defaultCategories)
+	const [categories, setCategories] = useState<Category[]>([])
 	const [businesses, setBusinesses] = useState<BusinessWithCategory[]>([])
 	const [popularBusinesses, setPopularBusinesses] = useState<BusinessWithCategory[]>([])
 	const [isLoading, setIsLoading] = useState(true)
