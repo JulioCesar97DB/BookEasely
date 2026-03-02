@@ -102,11 +102,10 @@ export async function getAvailableWorkers({
 
 	if (!serviceWorkers) return { workers: [] }
 
-	const activeWorkers = serviceWorkers
-		.map((sw) => sw.workers)
-		.filter((w): w is { id: string; display_name: string; avatar_url: string | null; is_active: boolean } =>
-			w !== null && w.is_active
-		)
+	type WorkerInfo = { id: string; display_name: string; avatar_url: string | null; is_active: boolean }
+	const activeWorkers: WorkerInfo[] = serviceWorkers
+		.map((sw) => sw.workers as unknown as WorkerInfo | null)
+		.filter((w): w is WorkerInfo => w !== null && w.is_active)
 
 	// For each worker, count available slots
 	const result = await Promise.all(
