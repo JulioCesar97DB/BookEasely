@@ -1,8 +1,10 @@
 import { PageTransition } from '@/components/page-transition'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getAuthUser, getIsWorker } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
 import { Calendar, Clock } from 'lucide-react'
+import Link from 'next/link'
 import { BookingActions } from './booking-actions'
 
 interface BookingRow {
@@ -12,9 +14,12 @@ interface BookingRow {
 	end_time: string
 	status: string
 	note: string | null
+	business_id: string
 	services: { name: string; duration_minutes: number; price: number } | null
-	businesses: { name: string } | null
+	businesses: { name: string; slug: string } | null
 	profiles: { full_name: string } | null
+	workers: { display_name: string } | null
+	reviews: { id: string }[]
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -30,7 +35,6 @@ export default async function BookingsPage() {
 	const userId = user!.id
 	const supabase = await createClient()
 
-	// Get worker IDs if user is a worker
 	let workerIds: string[] = []
 	if (isWorker) {
 		const { data: workerRecords } = await supabase
@@ -41,18 +45,17 @@ export default async function BookingsPage() {
 		workerIds = workerRecords?.map((w) => w.id) ?? []
 	}
 
-	// Fetch client bookings and worker bookings in parallel
 	const [{ data: rawClientBookings }, workerBookingsResult] = await Promise.all([
 		supabase
 			.from('bookings')
-			.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), businesses(name)')
+			.select('id, date, start_time, end_time, status, note, business_id, services(name, duration_minutes, price), businesses(name, slug), workers(display_name), reviews(id)')
 			.eq('client_id', userId)
 			.order('date', { ascending: false })
 			.limit(50),
 		workerIds.length > 0
 			? supabase
 				.from('bookings')
-				.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name)')
+				.select('id, date, start_time, end_time, status, note, business_id, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name), reviews(id)')
 				.in('worker_id', workerIds)
 				.order('date', { ascending: false })
 				.limit(50)
@@ -61,7 +64,6 @@ export default async function BookingsPage() {
 
 	const clientBookings = (rawClientBookings ?? []) as unknown as BookingRow[]
 	const workerBookings = (workerBookingsResult.data ?? []) as unknown as BookingRow[]
-
 	const today = new Date().toISOString().split('T')[0]!
 
 	return (
@@ -82,9 +84,6 @@ export default async function BookingsPage() {
 								<CardContent className="flex flex-col items-center justify-center py-12 text-center">
 									<Calendar className="h-10 w-10 text-muted-foreground/30" />
 									<p className="mt-3 text-sm font-medium text-muted-foreground">No work appointments yet</p>
-									<p className="mt-1 text-xs text-muted-foreground/70">
-										Appointments assigned to you will appear here
-									</p>
 								</CardContent>
 							</Card>
 						) : (
@@ -114,6 +113,9 @@ export default async function BookingsPage() {
 								<p className="mt-1 text-xs text-muted-foreground/70">
 									When you book an appointment, it will appear here
 								</p>
+								<Button asChild variant="outline" className="mt-4">
+									<Link href="/dashboard/discover">Browse Businesses</Link>
+								</Button>
 							</CardContent>
 						</Card>
 					) : (
@@ -123,7 +125,7 @@ export default async function BookingsPage() {
 									key={booking.id}
 									booking={booking}
 									label={booking.businesses?.name ?? 'Business'}
-									sublabel={booking.services?.name ?? 'Service'}
+									sublabel={`${booking.services?.name ?? 'Service'}${booking.workers?.display_name ? ` with ${booking.workers.display_name}` : ''}`}
 									isWorkerView={false}
 									isPast={booking.date < today}
 								/>
@@ -151,6 +153,8 @@ function BookingCard({
 }) {
 	const canConfirm = isWorkerView && booking.status === 'pending'
 	const canComplete = isWorkerView && booking.status === 'confirmed'
+	const canCancel = !isWorkerView && (booking.status === 'pending' || booking.status === 'confirmed') && !isPast
+	const canReview = !isWorkerView && booking.status === 'completed' && (!booking.reviews || booking.reviews.length === 0)
 
 	return (
 		<Card className={isPast ? 'opacity-60' : ''}>
@@ -171,16 +175,20 @@ function BookingCard({
 						<span className="text-xs text-muted-foreground">
 							{booking.start_time.slice(0, 5)} – {booking.end_time.slice(0, 5)}
 						</span>
+						{booking.services?.price && (
+							<span className="text-xs font-medium">${Number(booking.services.price).toFixed(0)}</span>
+						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					{(canConfirm || canComplete) && (
-						<BookingActions
-							bookingId={booking.id}
-							canConfirm={canConfirm}
-							canComplete={canComplete}
-						/>
-					)}
+				<div className="flex items-center gap-2 flex-wrap">
+					<BookingActions
+						bookingId={booking.id}
+						businessId={booking.business_id}
+						canConfirm={canConfirm}
+						canComplete={canComplete}
+						canCancel={canCancel}
+						canReview={canReview}
+					/>
 					<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[booking.status] ?? ''}`}>
 						{booking.status}
 					</span>
