@@ -25,10 +25,10 @@ export default async function DashboardLayout({
 	const userName = profile.full_name || user.user_metadata?.full_name || user.email || 'User'
 
 	return (
-		<div className="flex flex-col md:flex-row min-h-svh">
+		<div className="flex flex-col md:flex-row h-svh overflow-hidden">
 			<MobileHeader role={role} userName={userName} isWorker={isWorker} unreadCount={unreadCount} />
 			<DashboardSidebar role={role} userName={userName} isWorker={isWorker} unreadCount={unreadCount} />
-			<main className="flex-1 overflow-auto">
+			<main className="flex-1 overflow-y-auto">
 				<div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
 					{children}
 				</div>
