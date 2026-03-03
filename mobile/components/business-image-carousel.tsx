@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
 	Image,
 	type NativeScrollEvent,
@@ -9,6 +9,7 @@ import {
 	StyleSheet,
 	View,
 } from 'react-native'
+import ImageViewing from 'react-native-image-viewing'
 import { colors, radius } from '../lib/theme'
 
 interface Props {
@@ -20,6 +21,13 @@ interface Props {
 
 export function BusinessImageCarousel({ images, height, width, onPress }: Props) {
 	const [activeIndex, setActiveIndex] = useState(0)
+	const [viewerVisible, setViewerVisible] = useState(false)
+	const [viewerIndex, setViewerIndex] = useState(0)
+
+	const viewerImages = useMemo(
+		() => images.map((uri) => ({ uri })),
+		[images],
+	)
 
 	const onMomentumScrollEnd = useCallback(
 		(e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -27,6 +35,18 @@ export function BusinessImageCarousel({ images, height, width, onPress }: Props)
 			setActiveIndex(index)
 		},
 		[width],
+	)
+
+	const handleImagePress = useCallback(
+		(index: number) => {
+			if (onPress) {
+				onPress()
+			} else {
+				setViewerIndex(index)
+				setViewerVisible(true)
+			}
+		},
+		[onPress],
 	)
 
 	// No images — placeholder
@@ -41,12 +61,20 @@ export function BusinessImageCarousel({ images, height, width, onPress }: Props)
 	// Single image — no carousel
 	if (images.length === 1) {
 		return (
-			<Pressable onPress={onPress} style={{ height, width, backgroundColor: colors.surfaceSecondary }}>
-				<Image
-					source={{ uri: images[0] }}
-					style={{ width, height, resizeMode: 'cover' }}
+			<>
+				<Pressable onPress={() => handleImagePress(0)} style={{ height, width, backgroundColor: colors.surfaceSecondary }}>
+					<Image
+						source={{ uri: images[0] }}
+						style={{ width, height, resizeMode: 'cover' }}
+					/>
+				</Pressable>
+				<ImageViewing
+					images={viewerImages}
+					imageIndex={0}
+					visible={viewerVisible}
+					onRequestClose={() => setViewerVisible(false)}
 				/>
-			</Pressable>
+			</>
 		)
 	}
 
@@ -62,7 +90,7 @@ export function BusinessImageCarousel({ images, height, width, onPress }: Props)
 				nestedScrollEnabled
 			>
 				{images.map((url, i) => (
-					<Pressable key={`${url}-${i}`} onPress={onPress}>
+					<Pressable key={`${url}-${i}`} onPress={() => handleImagePress(i)}>
 						<View style={{ width, height, backgroundColor: colors.surfaceSecondary }}>
 							<Image
 								source={{ uri: url }}
@@ -83,6 +111,12 @@ export function BusinessImageCarousel({ images, height, width, onPress }: Props)
 					/>
 				))}
 			</View>
+			<ImageViewing
+				images={viewerImages}
+				imageIndex={viewerIndex}
+				visible={viewerVisible}
+				onRequestClose={() => setViewerVisible(false)}
+			/>
 		</View>
 	)
 }
