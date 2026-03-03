@@ -11,7 +11,17 @@ export const colors = {
 	destructive: '#E5484D',
 	destructiveLight: '#FFECEE',
 	success: '#30A46C',
-	successLight: '#E9F9EF',
+	successLight: '#D4F7E2',
+	warning: '#F59E0B',
+	warningLight: '#FEF3C7',
+	warningDark: '#92400E',
+	info: '#0091FF',
+	infoLight: '#DBEAFE',
+	danger: '#E5484D',
+	dangerLight: '#FFE5E5',
+	star: '#F59E0B',
+	muted: '#6B7280',
+	mutedLight: '#F3F4F6',
 	white: '#FFFFFF',
 } as const
 

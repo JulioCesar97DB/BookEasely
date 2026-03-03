@@ -19,9 +19,9 @@ interface QuickAction {
 
 const actions: QuickAction[] = [
 	{ label: 'Edit Profile', icon: 'storefront-outline', route: '/(tabs)/business/profile', color: colors.primary },
-	{ label: 'Services', icon: 'clipboard-outline', route: '/(tabs)/business/services', color: '#30A46C' },
-	{ label: 'Team', icon: 'people-outline', route: '/(tabs)/business/workers', color: '#E5484D' },
-	{ label: 'Schedule', icon: 'calendar-outline', route: '/(tabs)/business/schedule', color: '#0091FF' },
+	{ label: 'Services', icon: 'clipboard-outline', route: '/(tabs)/business/services', color: colors.success },
+	{ label: 'Team', icon: 'people-outline', route: '/(tabs)/business/workers', color: colors.danger },
+	{ label: 'Schedule', icon: 'calendar-outline', route: '/(tabs)/business/schedule', color: colors.info },
 	{ label: 'Hours', icon: 'time-outline', route: '/(tabs)/business/hours', color: '#F76B15' },
 	{ label: 'Settings', icon: 'settings-outline', route: '/(tabs)/business/settings', color: '#6E56CF' },
 ]
@@ -114,7 +114,7 @@ export default function BusinessDashboard() {
 						</View>
 						{business.rating_count > 0 && (
 							<View style={styles.ratingBadge}>
-								<Ionicons name="star" size={14} color="#F59E0B" />
+								<Ionicons name="star" size={14} color={colors.star} />
 								<Text style={styles.ratingText}>{business.rating_avg.toFixed(1)}</Text>
 							</View>
 						)}
@@ -209,12 +209,12 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 4,
-		backgroundColor: '#FEF3C7',
+		backgroundColor: colors.warningLight,
 		paddingHorizontal: spacing.sm,
 		paddingVertical: 4,
 		borderRadius: radius.full,
 	},
-	ratingText: { fontSize: fontSize.sm, fontWeight: '600', color: '#92400E' },
+	ratingText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.warningDark },
 	statsRow: {
 		flexDirection: 'row',
 		gap: spacing.md,

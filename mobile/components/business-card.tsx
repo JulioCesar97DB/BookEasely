@@ -31,7 +31,7 @@ export function BusinessCard({ business, width }: BusinessCardProps) {
 				<View style={styles.ratingCategoryRow}>
 					{business.rating_count > 0 ? (
 						<View style={styles.ratingInline}>
-							<Ionicons name="star" size={11} color="#F59E0B" />
+							<Ionicons name="star" size={11} color={colors.star} />
 							<Text style={styles.ratingValue}>{Number(business.rating_avg).toFixed(1)}</Text>
 							<Text style={styles.ratingCount}>({business.rating_count})</Text>
 						</View>
