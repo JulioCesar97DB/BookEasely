@@ -60,19 +60,31 @@ export default function ScheduleScreen() {
 
 			if (!biz) { setLoading(false); return }
 
-			const [hoursRes, workersRes, availRes, blockedRes] = await Promise.all([
+			const [hoursRes, workersRes] = await Promise.all([
 				supabase.from('business_hours').select('*').eq('business_id', biz.id).order('day_of_week'),
 				supabase.from('workers').select('id, display_name, is_active').eq('business_id', biz.id).eq('is_active', true),
-				supabase.from('worker_availability').select('*'),
-				supabase.from('worker_blocked_dates').select('*'),
 			])
 
 			const w = workersRes.data ?? []
+			const workerIds = w.map((wr) => wr.id)
+
+			let availData: WorkerAvailability[] = []
+			let blockedData: WorkerBlockedDate[] = []
+
+			if (workerIds.length > 0) {
+				const [availRes, blockedRes] = await Promise.all([
+					supabase.from('worker_availability').select('*').in('worker_id', workerIds),
+					supabase.from('worker_blocked_dates').select('*').in('worker_id', workerIds),
+				])
+				availData = availRes.data ?? []
+				blockedData = blockedRes.data ?? []
+			}
+
 			setBusinessHours(hoursRes.data ?? [])
 			setWorkers(w)
-			setAvailability(availRes.data ?? [])
-			setBlockedDates(blockedRes.data ?? [])
-			setVisibleWorkers(new Set(w.map((wr) => wr.id)))
+			setAvailability(availData)
+			setBlockedDates(blockedData)
+			setVisibleWorkers(new Set(workerIds))
 			setLoading(false)
 		}
 		load()
