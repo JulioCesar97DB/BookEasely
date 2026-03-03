@@ -13,11 +13,10 @@ import {
 	View,
 } from 'react-native'
 import { useAuth } from '../../../lib/auth-context'
+import { DAYS_FULL } from '../../../lib/constants'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import type { BusinessHours } from '../../../lib/types'
-
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 interface HourEntry {
 	day_of_week: number
@@ -51,7 +50,7 @@ export default function HoursScreen() {
 					.order('day_of_week')
 
 				setHours(
-					DAYS.map((_, i) => {
+					DAYS_FULL.map((_, i) => {
 						const existing = data?.find((h: BusinessHours) => h.day_of_week === i)
 						return {
 							day_of_week: i,
@@ -110,7 +109,7 @@ export default function HoursScreen() {
 				{hours.map((hour, index) => (
 					<View key={hour.day_of_week} style={styles.dayRow}>
 						<View style={styles.dayHeader}>
-							<Text style={styles.dayName}>{DAYS[index]}</Text>
+							<Text style={styles.dayName}>{DAYS_FULL[index]}</Text>
 							<View style={styles.toggleContainer}>
 								<Text style={styles.toggleLabel}>{hour.is_closed ? 'Closed' : 'Open'}</Text>
 								<Switch

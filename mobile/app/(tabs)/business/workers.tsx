@@ -11,11 +11,10 @@ import {
 	View,
 } from 'react-native'
 import { useAuth } from '../../../lib/auth-context'
+import { DAYS_SHORT } from '../../../lib/constants'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import type { Worker, WorkerAvailability, WorkerInvitation } from '../../../lib/types'
-
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function getAvailabilitySummary(workerAvail: WorkerAvailability[]): string {
 	const activeDays = workerAvail.filter((a) => a.is_active).sort((a, b) => a.day_of_week - b.day_of_week)
@@ -29,7 +28,7 @@ function getAvailabilitySummary(workerAvail: WorkerAvailability[]): string {
 		const first = indices[0]!
 		const last = indices[indices.length - 1]!
 		const isConsecutive = indices.every((v, i) => v === first + i)
-		if (isConsecutive) return `${DAYS[first]}–${DAYS[last]}, ${timeStr}`
+		if (isConsecutive) return `${DAYS_SHORT[first]}–${DAYS_SHORT[last]}, ${timeStr}`
 	}
 	return `${activeDays.length} days/week, ${timeStr}`
 }

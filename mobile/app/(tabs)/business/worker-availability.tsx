@@ -12,11 +12,10 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native'
+import { DAYS_FULL } from '../../../lib/constants'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import type { WorkerAvailability } from '../../../lib/types'
-
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 interface AvailEntry {
 	day_of_week: number
@@ -42,7 +41,7 @@ export default function WorkerAvailabilityScreen() {
 				.order('day_of_week')
 
 			setAvailability(
-				DAYS.map((_, i) => {
+				DAYS_FULL.map((_, i) => {
 					const existing = data?.find((a: WorkerAvailability) => a.day_of_week === i)
 					return {
 						day_of_week: i,
@@ -102,7 +101,7 @@ export default function WorkerAvailabilityScreen() {
 				{availability.map((entry, index) => (
 					<View key={entry.day_of_week} style={styles.dayRow}>
 						<View style={styles.dayHeader}>
-							<Text style={styles.dayName}>{DAYS[index]}</Text>
+							<Text style={styles.dayName}>{DAYS_FULL[index]}</Text>
 							<View style={styles.toggleContainer}>
 								<Text style={styles.toggleLabel}>{entry.is_active ? 'Available' : 'Off'}</Text>
 								<Switch

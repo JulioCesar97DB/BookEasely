@@ -9,19 +9,14 @@ import {
 	View,
 } from 'react-native'
 import { useAuth } from '../../../lib/auth-context'
+import { CHART_COLORS, DAYS_SHORT } from '../../../lib/constants'
+import { formatDateStr, timeToMinutes } from '../../../lib/format'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import type { BusinessHours, Worker, WorkerAvailability, WorkerBlockedDate } from '../../../lib/types'
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 7) // 7am–5pm
 const ROW_HEIGHT = 48
-const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
-
-function timeToMinutes(time: string): number {
-	const [h, m] = time.split(':').map(Number)
-	return (h ?? 0) * 60 + (m ?? 0)
-}
 
 function formatHour(hour: number): string {
 	if (hour === 0) return '12a'
@@ -41,10 +36,6 @@ function getWeekDates(offset: number): Date[] {
 	})
 }
 
-function formatDate(d: Date): string {
-	return d.toISOString().split('T')[0] ?? ''
-}
-
 export default function ScheduleScreen() {
 	const { user } = useAuth()
 	const [loading, setLoading] = useState(true)
@@ -56,7 +47,7 @@ export default function ScheduleScreen() {
 	const [visibleWorkers, setVisibleWorkers] = useState<Set<string>>(new Set())
 
 	const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset])
-	const todayStr = formatDate(new Date())
+	const todayStr = formatDateStr(new Date())
 
 	useEffect(() => {
 		if (!user) return
@@ -168,10 +159,10 @@ export default function ScheduleScreen() {
 						<View style={styles.headerRow}>
 							<View style={styles.timeCol} />
 							{weekDates.map((date) => {
-								const isToday = formatDate(date) === todayStr
+								const isToday = formatDateStr(date) === todayStr
 								return (
-									<View key={formatDate(date)} style={[styles.dayCol, isToday && styles.dayColToday]}>
-										<Text style={styles.dayLabel}>{DAYS[date.getDay()]}</Text>
+									<View key={formatDateStr(date)} style={[styles.dayCol, isToday && styles.dayColToday]}>
+										<Text style={styles.dayLabel}>{DAYS_SHORT[date.getDay()]}</Text>
 										<Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>{date.getDate()}</Text>
 									</View>
 								)
@@ -186,8 +177,8 @@ export default function ScheduleScreen() {
 								</View>
 								{weekDates.map((date, dayIdx) => {
 									const dayOfWeek = date.getDay()
-									const isToday = formatDate(date) === todayStr
-									const dateStr = formatDate(date)
+									const isToday = formatDateStr(date) === todayStr
+									const dateStr = formatDateStr(date)
 									const bh = businessHours.find((h) => h.day_of_week === dayOfWeek)
 									const isClosed = !bh || bh.is_closed
 									const bizOpen = bh && !bh.is_closed ? timeToMinutes(bh.open_time) : 0

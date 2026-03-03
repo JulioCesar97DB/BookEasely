@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../lib/auth-context'
 import { formatTime, getAvailableSlots, rescheduleBooking, type TimeSlot } from '../../lib/booking'
+import { BOOKING_STATUS_COLORS } from '../../lib/constants'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 
@@ -32,14 +33,6 @@ interface BookingItem {
 	services: { name: string; price: number } | null
 	businesses: { name: string; slug: string } | null
 	workers: { display_name: string } | null
-}
-
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-	pending: { bg: '#FEF3C7', text: '#92400E' },
-	confirmed: { bg: '#DBEAFE', text: '#1E40AF' },
-	completed: { bg: '#D1FAE5', text: '#065F46' },
-	cancelled: { bg: '#FEE2E2', text: '#991B1B' },
-	no_show: { bg: '#F3F4F6', text: '#374151' },
 }
 
 export default function BookingsScreen() {
@@ -197,7 +190,7 @@ export default function BookingsScreen() {
 							const isPast = item.date < today || item.status === 'cancelled'
 							const canCancel = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
 							const canReschedule = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
-							const statusColor = STATUS_COLORS[item.status] ?? { bg: '#F3F4F6', text: '#374151' }
+							const statusColor = BOOKING_STATUS_COLORS[item.status] ?? { bg: '#F3F4F6', text: '#374151' }
 							return (
 								<View style={[styles.bookingCard, isPast && styles.bookingCardPast]}>
 									<View style={styles.dateBox}>

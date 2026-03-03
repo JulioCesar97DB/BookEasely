@@ -1,21 +1,12 @@
 // Shared booking logic for mobile - time slot generation
 
+import { timeToMinutes, minutesToTime } from './format'
+export { formatTime, formatDuration } from './format'
 import { supabase } from './supabase'
 
 export interface TimeSlot {
 	start: string // HH:MM
 	end: string   // HH:MM
-}
-
-function timeToMinutes(time: string): number {
-	const parts = time.split(':')
-	return Number(parts[0]) * 60 + Number(parts[1])
-}
-
-function minutesToTime(minutes: number): string {
-	const h = Math.floor(minutes / 60)
-	const m = minutes % 60
-	return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
 }
 
 function subtractRange(
@@ -222,16 +213,3 @@ export async function rescheduleBooking({
 	return {}
 }
 
-export function formatTime(time: string): string {
-	const [h, m] = time.split(':').map(Number)
-	const ampm = h >= 12 ? 'PM' : 'AM'
-	const hour = h % 12 || 12
-	return m === 0 ? `${hour}:00 ${ampm}` : `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
-}
-
-export function formatDuration(minutes: number): string {
-	if (minutes < 60) return `${minutes}min`
-	const h = Math.floor(minutes / 60)
-	const m = minutes % 60
-	return m > 0 ? `${h}h ${m}min` : `${h}h`
-}

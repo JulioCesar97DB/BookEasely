@@ -17,6 +17,8 @@ import { AnimatedScreen } from '../../components/animated-screen'
 import { BusinessImageCarousel } from '../../components/business-image-carousel'
 import { useAuth } from '../../lib/auth-context'
 import { supabase } from '../../lib/supabase'
+import { DAYS_FULL, DAYS_SHORT } from '../../lib/constants'
+import { formatTime, formatDuration, getInitials, isOpenNow } from '../../lib/format'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 import type {
 	BusinessHours,
@@ -34,42 +36,8 @@ interface ReviewWithProfile {
 	profiles: { full_name: string; avatar_url: string | null } | null
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const TABS = ['Services', 'Team', 'Reviews', 'Hours'] as const
 type Tab = (typeof TABS)[number]
-
-function formatTime(time: string) {
-	const [h, m] = time.split(':').map(Number)
-	const ampm = h >= 12 ? 'PM' : 'AM'
-	const hour = h % 12 || 12
-	return m === 0 ? `${hour} ${ampm}` : `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
-}
-
-function formatDuration(minutes: number) {
-	if (minutes < 60) return `${minutes}min`
-	const h = Math.floor(minutes / 60)
-	const m = minutes % 60
-	return m > 0 ? `${h}h ${m}min` : `${h}h`
-}
-
-function getInitials(name: string) {
-	return name
-		.split(' ')
-		.map((n) => n[0])
-		.join('')
-		.toUpperCase()
-		.slice(0, 2)
-}
-
-function isOpenNow(hours: BusinessHours[]) {
-	const now = new Date()
-	const today = now.getDay()
-	const todayHours = hours.find((h) => h.day_of_week === today)
-	if (!todayHours || todayHours.is_closed) return false
-	const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-	return currentTime >= todayHours.open_time && currentTime < todayHours.close_time
-}
 
 const screenWidth = Dimensions.get('window').width
 
@@ -590,7 +558,7 @@ function HoursSection({
 			{/* Hours */}
 			<View style={styles.hoursCard}>
 				<Text style={styles.cardTitle}>Business Hours</Text>
-				{DAYS.map((_, i) => {
+				{DAYS_FULL.map((_, i) => {
 					const dayHours = hours.find((h) => h.day_of_week === i)
 					const isToday = i === today
 					return (
@@ -598,7 +566,7 @@ function HoursSection({
 							<View style={styles.hourDayCol}>
 								{isToday && <View style={styles.todayDot} />}
 								<Text style={[styles.hourDay, isToday && styles.hourDayToday]}>
-									{SHORT_DAYS[i]}
+									{DAYS_SHORT[i]}
 								</Text>
 							</View>
 							<Text

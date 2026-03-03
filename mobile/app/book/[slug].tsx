@@ -16,15 +16,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../lib/auth-context'
 import { createBooking, formatDuration, formatTime, getAvailableSlots, getAvailableSlotsAnyWorker, type TimeSlot } from '../../lib/booking'
+import { getInitials } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 import type { Service, Worker } from '../../lib/types'
 
 type Step = 'service' | 'worker' | 'datetime' | 'confirm' | 'success'
-
-function getInitials(name: string) {
-	return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-}
 
 export default function BookScreen() {
 	const { slug } = useLocalSearchParams<{ slug: string }>()

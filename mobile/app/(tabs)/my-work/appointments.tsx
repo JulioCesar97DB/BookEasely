@@ -10,6 +10,7 @@ import {
 	View,
 } from 'react-native'
 import { useAuth } from '../../../lib/auth-context'
+import { BOOKING_STATUS_COLORS } from '../../../lib/constants'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 
@@ -22,14 +23,6 @@ interface BookingItem {
 	note: string | null
 	services: { name: string; duration_minutes: number; price: number } | null
 	profiles: { full_name: string } | null
-}
-
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-	pending: { bg: '#FEF3C7', text: '#92400E' },
-	confirmed: { bg: '#DBEAFE', text: '#1E40AF' },
-	completed: { bg: '#D1FAE5', text: '#065F46' },
-	cancelled: { bg: '#FEE2E2', text: '#991B1B' },
-	no_show: { bg: '#F3F4F6', text: '#374151' },
 }
 
 export default function AppointmentsScreen() {
@@ -117,7 +110,7 @@ export default function AppointmentsScreen() {
 					const isPast = item.date < today || ['completed', 'cancelled', 'no_show'].includes(item.status)
 					const canConfirm = item.status === 'pending'
 					const canComplete = item.status === 'confirmed'
-					const statusColor = STATUS_COLORS[item.status] ?? STATUS_COLORS.pending!
+					const statusColor = BOOKING_STATUS_COLORS[item.status] ?? BOOKING_STATUS_COLORS.pending!
 
 					return (
 						<View style={[styles.card, isPast && styles.cardPast]}>
