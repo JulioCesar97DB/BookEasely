@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
-	FlatList,
 	Image,
+	type NativeScrollEvent,
+	type NativeSyntheticEvent,
+	Pressable,
+	ScrollView,
 	StyleSheet,
 	View,
-	type ViewToken,
 } from 'react-native'
 import { colors, radius } from '../lib/theme'
 
@@ -13,64 +15,64 @@ interface Props {
 	images: string[]
 	height: number
 	width: number
+	onPress?: () => void
 }
 
-export function BusinessImageCarousel({ images, height, width }: Props) {
+export function BusinessImageCarousel({ images, height, width, onPress }: Props) {
 	const [activeIndex, setActiveIndex] = useState(0)
 
-	const onViewableItemsChanged = useCallback(
-		({ viewableItems }: { viewableItems: ViewToken[] }) => {
-			if (viewableItems.length > 0 && viewableItems[0].index != null) {
-				setActiveIndex(viewableItems[0].index)
-			}
+	const onMomentumScrollEnd = useCallback(
+		(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+			const index = Math.round(e.nativeEvent.contentOffset.x / width)
+			setActiveIndex(index)
 		},
-		[],
+		[width],
 	)
-
-	const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current
 
 	// No images — placeholder
 	if (images.length === 0) {
 		return (
-			<View style={[styles.placeholder, { height, width }]}>
+			<Pressable onPress={onPress} style={[styles.placeholder, { height, width }]}>
 				<Ionicons name="storefront-outline" size={28} color={colors.border} />
-			</View>
+			</Pressable>
 		)
 	}
 
 	// Single image — no carousel
 	if (images.length === 1) {
 		return (
-			<View style={{ height, width, backgroundColor: colors.surfaceSecondary }}>
+			<Pressable onPress={onPress} style={{ height, width, backgroundColor: colors.surfaceSecondary }}>
 				<Image
 					source={{ uri: images[0] }}
 					style={{ width, height, resizeMode: 'cover' }}
 				/>
-			</View>
+			</Pressable>
 		)
 	}
 
 	// Multiple images — carousel with dots
 	return (
 		<View style={{ height, width }}>
-			<FlatList
-				data={images}
+			<ScrollView
 				horizontal
 				pagingEnabled
 				showsHorizontalScrollIndicator={false}
-				onViewableItemsChanged={onViewableItemsChanged}
-				viewabilityConfig={viewabilityConfig}
-				keyExtractor={(item, i) => `${item}-${i}`}
-				renderItem={({ item }) => (
-					<View style={{ width, height, backgroundColor: colors.surfaceSecondary }}>
-						<Image
-							source={{ uri: item }}
-							style={{ width, height, resizeMode: 'cover' }}
-						/>
-					</View>
-				)}
-			/>
-			<View style={styles.dots}>
+				onMomentumScrollEnd={onMomentumScrollEnd}
+				scrollEventThrottle={16}
+				nestedScrollEnabled
+			>
+				{images.map((url, i) => (
+					<Pressable key={`${url}-${i}`} onPress={onPress}>
+						<View style={{ width, height, backgroundColor: colors.surfaceSecondary }}>
+							<Image
+								source={{ uri: url }}
+								style={{ width, height, resizeMode: 'cover' }}
+							/>
+						</View>
+					</Pressable>
+				))}
+			</ScrollView>
+			<View style={styles.dots} pointerEvents="none">
 				{images.map((_, i) => (
 					<View
 						key={i}

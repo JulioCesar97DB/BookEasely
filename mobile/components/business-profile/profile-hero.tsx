@@ -38,10 +38,10 @@ export function ProfileHero({ business, hours, images, activeTab, onTabChange }:
 			{/* Hero Image */}
 			<View style={styles.heroContainer}>
 				<BusinessImageCarousel images={images} height={200} width={screenWidth} />
-				<View style={styles.heroOverlay} />
+				<View style={styles.heroOverlay} pointerEvents="none" />
 
 				{/* Back button */}
-				<SafeAreaView style={styles.heroNav} edges={['top']}>
+				<SafeAreaView style={styles.heroNav} edges={['top']} pointerEvents="box-none">
 					<TouchableOpacity
 						style={styles.heroNavButton}
 						onPress={() => router.back()}
@@ -52,7 +52,7 @@ export function ProfileHero({ business, hours, images, activeTab, onTabChange }:
 				</SafeAreaView>
 
 				{/* Hero info */}
-				<View style={styles.heroInfo}>
+				<View style={styles.heroInfo} pointerEvents="none">
 					{business.categories?.name && (
 						<View style={styles.categoryBadge}>
 							<Text style={styles.categoryBadgeText}>{business.categories.name}</Text>

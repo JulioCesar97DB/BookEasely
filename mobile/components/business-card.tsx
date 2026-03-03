@@ -13,19 +13,21 @@ interface BusinessCardProps {
 export function BusinessCard({ business, width }: BusinessCardProps) {
 	const router = useRouter()
 	const location = [business.city, business.state].filter(Boolean).join(', ')
+	const navigate = () => router.push(`/business/${business.slug}`)
 
 	return (
-		<TouchableOpacity
-			style={[styles.card, { width, flex: 1 }]}
-			activeOpacity={0.85}
-			onPress={() => router.push(`/business/${business.slug}`)}
-		>
+		<View style={[styles.card, { width, flex: 1 }]}>
 			<BusinessImageCarousel
 				images={business.photos?.length ? business.photos : (business.cover_image_url ? [business.cover_image_url] : [])}
 				height={width}
 				width={width}
+				onPress={navigate}
 			/>
-			<View style={styles.info}>
+			<TouchableOpacity
+				style={styles.info}
+				activeOpacity={0.85}
+				onPress={navigate}
+			>
 				<Text style={styles.name} numberOfLines={1}>{business.name}</Text>
 
 				<View style={styles.ratingCategoryRow}>
@@ -66,8 +68,8 @@ export function BusinessCard({ business, width }: BusinessCardProps) {
 						<Text style={styles.instantText}>Instant</Text>
 					</View>
 				)}
-			</View>
-		</TouchableOpacity>
+			</TouchableOpacity>
+		</View>
 	)
 }
 
