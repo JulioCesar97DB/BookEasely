@@ -1,7 +1,7 @@
 'use client'
 
 import type { CarouselApi } from '@/components/ui/carousel'
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
 import { cn } from '@/lib/utils'
 import { Search } from 'lucide-react'
 import Image from 'next/image'
@@ -13,6 +13,7 @@ interface Props {
 	aspectRatio?: 'video' | 'square' | 'compact'
 	sizes?: string
 	className?: string
+	showArrows?: boolean
 }
 
 const aspectClasses = {
@@ -27,6 +28,7 @@ export function BusinessImageCarousel({
 	aspectRatio = 'video',
 	sizes = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw',
 	className,
+	showArrows = false,
 }: Props) {
 	const [api, setApi] = useState<CarouselApi>()
 	const [current, setCurrent] = useState(0)
@@ -106,6 +108,12 @@ export function BusinessImageCarousel({
 						</CarouselItem>
 					))}
 				</CarouselContent>
+				{showArrows && (
+					<>
+						<CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 bg-black/40 border-0 text-white hover:bg-black/60" />
+						<CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 bg-black/40 border-0 text-white hover:bg-black/60" />
+					</>
+				)}
 			</Carousel>
 
 			{/* Dot indicators */}

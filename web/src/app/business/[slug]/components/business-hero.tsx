@@ -37,6 +37,7 @@ export function BusinessHero({ business, hours, bookingUrl }: BusinessHeroProps)
 					alt={business.name}
 					aspectRatio="compact"
 					sizes="100vw"
+					showArrows
 				/>
 				<div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
 
