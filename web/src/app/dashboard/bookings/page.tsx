@@ -58,6 +58,7 @@ export default async function BookingsPage() {
 			: Promise.resolve({ data: [] }),
 	])
 
+	// Supabase join queries return complex inferred types; cast via unknown for safety
 	const clientBookings = (rawClientBookings ?? []) as unknown as BookingRow[]
 	const workerBookings = (workerBookingsResult.data ?? []) as unknown as BookingRow[]
 	const today = new Date().toISOString().split('T')[0]!

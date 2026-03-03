@@ -18,7 +18,7 @@ export default async function MySchedulePage() {
 		.eq('user_id', user!.id)
 		.eq('is_active', true)
 
-	const workers: WorkerWithBusiness[] = (rawWorkers ?? []) as unknown as WorkerWithBusiness[]
+	const workers = (rawWorkers ?? []) as unknown as WorkerWithBusiness[]
 
 	if (workers.length === 0) {
 		redirect('/dashboard')

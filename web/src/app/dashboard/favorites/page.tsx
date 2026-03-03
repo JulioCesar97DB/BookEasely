@@ -1,4 +1,5 @@
 import { BusinessCard } from '@/components/business-card'
+import type { BusinessWithCategory } from '@/lib/types'
 import { PageTransition } from '@/components/page-transition'
 import { Card, CardContent } from '@/components/ui/card'
 import { getAuthUser } from '@/lib/supabase/auth-cache'
@@ -16,7 +17,7 @@ export default async function FavoritesPage() {
 		.order('created_at', { ascending: false })
 
 	const businesses = (favorites ?? [])
-		.map((f) => f.businesses)
+		.map((f) => f.businesses as unknown as BusinessWithCategory)
 		.filter(Boolean)
 
 	return (
@@ -43,7 +44,7 @@ export default async function FavoritesPage() {
 					</Card>
 				) : (
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-						{businesses.map((biz: any) => (
+						{businesses.map((biz) => (
 							<BusinessCard key={biz.id} business={biz} />
 						))}
 					</div>
