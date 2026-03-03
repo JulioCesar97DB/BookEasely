@@ -13,6 +13,7 @@ import {
 	respondToReviewSchema,
 	submitReviewSchema,
 } from '@/lib/validations/booking'
+import { type ServiceWorkerWithDetails, type Worker, typedQuery } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 import { generateTimeSlots, type TimeSlot } from './time-slots'
 
@@ -123,9 +124,9 @@ export async function getAvailableWorkers(input: {
 
 	if (!serviceWorkers) return { workers: [] }
 
-	type WorkerInfo = { id: string; display_name: string; avatar_url: string | null; is_active: boolean }
-	const activeWorkers: WorkerInfo[] = serviceWorkers
-		.map((sw) => sw.workers as unknown as WorkerInfo | null)
+	type WorkerInfo = Pick<Worker, 'id' | 'display_name' | 'avatar_url' | 'is_active'>
+	const activeWorkers: WorkerInfo[] = typedQuery<ServiceWorkerWithDetails[]>(serviceWorkers)
+		.map((sw) => sw.workers)
 		.filter((w): w is WorkerInfo => w !== null && w.is_active)
 
 	const result = await Promise.all(

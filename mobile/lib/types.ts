@@ -172,3 +172,129 @@ export interface WorkerInvitation {
 	created_at: string
 	accepted_at: string | null
 }
+
+// --- Supabase join result types ---
+// These match the shapes returned by Supabase queries with nested selects.
+
+// --- Supabase join result types ---
+// Supabase's generated TypeScript types model foreign key joins as arrays,
+// even when the relationship is many-to-one (where the runtime value is a single
+// object). These "Raw" types match the Supabase TS output. The helper functions
+// below convert them to the flattened app-level types used by components.
+
+/** Raw Supabase result for client bookings query */
+interface ClientBookingRaw {
+	id: string
+	date: string
+	start_time: string
+	end_time: string
+	status: string
+	business_id: string
+	service_id: string
+	worker_id: string
+	services: { name: string; price: number }[]
+	businesses: { name: string; slug: string }[]
+	workers: { display_name: string }[]
+}
+
+/** App-level client booking with joined relations as single objects */
+export interface ClientBookingRow {
+	id: string
+	date: string
+	start_time: string
+	end_time: string
+	status: string
+	business_id: string
+	service_id: string
+	worker_id: string
+	services: { name: string; price: number } | null
+	businesses: { name: string; slug: string } | null
+	workers: { display_name: string } | null
+}
+
+/** Convert raw Supabase client bookings to app-level type */
+export function toClientBookings(rows: unknown[]): ClientBookingRow[] {
+	return (rows as ClientBookingRaw[]).map((r) => ({
+		...r,
+		services: Array.isArray(r.services) ? r.services[0] ?? null : r.services,
+		businesses: Array.isArray(r.businesses) ? r.businesses[0] ?? null : r.businesses,
+		workers: Array.isArray(r.workers) ? r.workers[0] ?? null : r.workers,
+	}))
+}
+
+/** Raw Supabase result for worker appointments query */
+interface WorkerAppointmentRaw {
+	id: string
+	date: string
+	start_time: string
+	end_time: string
+	status: string
+	note: string | null
+	services: { name: string; duration_minutes: number; price: number }[]
+	profiles: { full_name: string }[]
+}
+
+/** App-level worker appointment with joined relations as single objects */
+export interface WorkerAppointmentRow {
+	id: string
+	date: string
+	start_time: string
+	end_time: string
+	status: string
+	note: string | null
+	services: { name: string; duration_minutes: number; price: number } | null
+	profiles: { full_name: string } | null
+}
+
+/** Convert raw Supabase worker appointments to app-level type */
+export function toWorkerAppointments(rows: unknown[]): WorkerAppointmentRow[] {
+	return (rows as WorkerAppointmentRaw[]).map((r) => ({
+		...r,
+		services: Array.isArray(r.services) ? r.services[0] ?? null : r.services,
+		profiles: Array.isArray(r.profiles) ? r.profiles[0] ?? null : r.profiles,
+	}))
+}
+
+/** Raw Supabase result for workers with business join */
+interface WorkerWithBusinessRaw {
+	id: string
+	display_name: string
+	business_id: string
+	businesses: { name: string }[]
+}
+
+/** App-level worker record with business as single object */
+export interface WorkerWithBusiness {
+	id: string
+	display_name: string
+	business_id: string
+	businesses: { name: string } | null
+}
+
+/** Convert raw Supabase worker-with-business rows to app-level type */
+export function toWorkersWithBusiness(rows: unknown[]): WorkerWithBusiness[] {
+	return (rows as WorkerWithBusinessRaw[]).map((r) => ({
+		...r,
+		businesses: Array.isArray(r.businesses) ? r.businesses[0] ?? null : r.businesses,
+	}))
+}
+
+/** Raw Supabase result for service_workers with worker join */
+interface ServiceWorkerRaw {
+	worker_id: string
+	workers: { id: string; display_name: string; is_active: boolean }[]
+}
+
+/** App-level service-worker row with worker as single object */
+export interface ServiceWorkerRow {
+	worker_id: string
+	workers: { id: string; display_name: string; is_active: boolean } | null
+}
+
+/** Convert raw Supabase service-worker rows to app-level type */
+export function toServiceWorkerRows(rows: unknown[]): ServiceWorkerRow[] {
+	return (rows as ServiceWorkerRaw[]).map((r) => ({
+		...r,
+		workers: Array.isArray(r.workers) ? r.workers[0] ?? null : r.workers,
+	}))
+}

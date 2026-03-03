@@ -1,12 +1,8 @@
 import { getAuthUser } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
-import type { Worker, WorkerAvailability, WorkerBlockedDate } from '@/lib/types'
+import { type WorkerAvailability, type WorkerBlockedDate, type WorkerWithBusiness, typedQuery } from '@/lib/types'
 import { redirect } from 'next/navigation'
 import { MyScheduleClient } from './my-schedule-client'
-
-interface WorkerWithBusiness extends Pick<Worker, 'id' | 'display_name' | 'business_id'> {
-	businesses: { name: string } | null
-}
 
 export default async function MySchedulePage() {
 	const user = await getAuthUser()
@@ -18,7 +14,7 @@ export default async function MySchedulePage() {
 		.eq('user_id', user!.id)
 		.eq('is_active', true)
 
-	const workers = (rawWorkers ?? []) as unknown as WorkerWithBusiness[]
+	const workers = typedQuery<WorkerWithBusiness[]>(rawWorkers ?? [])
 
 	if (workers.length === 0) {
 		redirect('/dashboard')

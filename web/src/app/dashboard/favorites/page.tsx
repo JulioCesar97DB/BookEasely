@@ -1,5 +1,5 @@
 import { BusinessCard } from '@/components/business-card'
-import type { BusinessWithCategory } from '@/lib/types'
+import { type BusinessWithCategory, type FavoriteWithBusiness, typedQuery } from '@/lib/types'
 import { PageTransition } from '@/components/page-transition'
 import { Card, CardContent } from '@/components/ui/card'
 import { getAuthUser } from '@/lib/supabase/auth-cache'
@@ -16,9 +16,9 @@ export default async function FavoritesPage() {
 		.eq('client_id', user!.id)
 		.order('created_at', { ascending: false })
 
-	const businesses = (favorites ?? [])
-		.map((f) => f.businesses as unknown as BusinessWithCategory)
-		.filter(Boolean)
+	const businesses = typedQuery<FavoriteWithBusiness[]>(favorites ?? [])
+		.map((f) => f.businesses)
+		.filter((b): b is BusinessWithCategory => b !== null)
 
 	return (
 		<PageTransition>

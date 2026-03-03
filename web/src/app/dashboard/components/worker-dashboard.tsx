@@ -3,6 +3,7 @@ import { PageTransition } from '@/components/page-transition'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
+import { type WorkerWithBusiness, typedQuery } from '@/lib/types'
 import { Briefcase, Calendar, Clock, Search, Store } from 'lucide-react'
 import { QuickAction } from './quick-action'
 import { StatCard } from './stat-card'
@@ -17,13 +18,14 @@ function getDateStrings() {
 export async function WorkerDashboard({ firstName, userId }: { firstName: string; userId: string }) {
 	const supabase = await createClient()
 
-	const { data: workerRecords } = await supabase
+	const { data: rawWorkerRecords } = await supabase
 		.from('workers')
 		.select('id, display_name, business_id, businesses(name)')
 		.eq('user_id', userId)
 		.eq('is_active', true)
 
-	const workerIds = workerRecords?.map((w) => w.id) ?? []
+	const workerRecords = typedQuery<WorkerWithBusiness[]>(rawWorkerRecords ?? [])
+	const workerIds = workerRecords.map((w) => w.id)
 
 	const { today, nextWeek } = getDateStrings()
 
@@ -68,7 +70,7 @@ export async function WorkerDashboard({ firstName, userId }: { firstName: string
 					<AnimatedCard delay={0.1}>
 						<StatCard
 							title="Businesses"
-							value={String(workerRecords?.length ?? 0)}
+							value={String(workerRecords.length)}
 							description="You work for"
 							icon={Briefcase}
 						/>
@@ -84,27 +86,24 @@ export async function WorkerDashboard({ firstName, userId }: { firstName: string
 					</div>
 				</AnimatedSection>
 
-				{workerRecords && workerRecords.length > 0 && (
+				{workerRecords.length > 0 && (
 					<AnimatedSection delay={0.25}>
 						<h2 className="text-lg font-semibold mb-4">Your Workplaces</h2>
 						<div className="grid gap-3 sm:grid-cols-2">
-							{workerRecords.map((record) => {
-								const business = record.businesses as unknown as { name: string } | null
-								return (
+							{workerRecords.map((record) => (
 									<Card key={record.id}>
 										<CardContent className="flex items-center gap-4 py-4">
 											<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
 												<Store className="h-5 w-5 text-primary" />
 											</div>
 											<div className="flex-1 min-w-0">
-												<p className="font-medium truncate">{business?.name ?? 'Business'}</p>
+												<p className="font-medium truncate">{record.businesses?.name ?? 'Business'}</p>
 												<p className="text-sm text-muted-foreground truncate">as {record.display_name}</p>
 											</div>
 											<Badge variant="secondary">Worker</Badge>
 										</CardContent>
 									</Card>
-								)
-							})}
+							))}
 						</div>
 					</AnimatedSection>
 				)}

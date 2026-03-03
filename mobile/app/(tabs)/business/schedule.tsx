@@ -236,8 +236,8 @@ export default function ScheduleScreen() {
 															{
 																top: topPx - rowStartPx,
 																height: Math.min(heightPx, 300),
-																left: `${(wIdx * 100) / visibleWorkersList.length}%` as unknown as number,
-																width: `${100 / visibleWorkersList.length}%` as unknown as number,
+																left: (wIdx / visibleWorkersList.length) * CELL_WIDTH,
+																width: CELL_WIDTH / visibleWorkersList.length,
 																backgroundColor: isBlocked ? '#FEE2E2' : color + '30',
 																borderLeftColor: isBlocked ? '#EF4444' : color,
 															},

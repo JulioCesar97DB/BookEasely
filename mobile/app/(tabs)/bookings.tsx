@@ -20,6 +20,7 @@ import { cancelBooking, getAvailableSlots, rescheduleBooking, type TimeSlot } fr
 import { handleSupabaseError } from '../../lib/handle-error'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
+import { toClientBookings } from '../../lib/types'
 
 export default function BookingsScreen() {
 	const { user } = useAuth()
@@ -44,7 +45,7 @@ export default function BookingsScreen() {
 			.order('date', { ascending: false })
 			.limit(50)
 		handleSupabaseError(error, 'Loading bookings')
-		setBookings((data ?? []) as unknown as BookingItem[])
+		setBookings(toClientBookings(data ?? []))
 		setLoading(false)
 		setRefreshing(false)
 	}, [user])

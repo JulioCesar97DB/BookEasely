@@ -98,26 +98,26 @@ export default function ProfileScreen() {
 					<MenuItem
 						icon="person-outline"
 						label="Edit Profile"
-						onPress={() => router.push('/(tabs)/profile/edit' as never)}
+						onPress={() => router.push('/(tabs)/profile/edit' as `/${string}`)}
 					/>
 					{profile?.role === 'business_owner' && (
 						<MenuItem
 							icon="storefront-outline"
 							label="My Business"
-							onPress={() => router.push('/(tabs)/business' as never)}
+							onPress={() => router.push('/(tabs)/business' as `/${string}`)}
 						/>
 					)}
 					{isWorker && (
 						<MenuItem
 							icon="briefcase-outline"
 							label="My Work"
-							onPress={() => router.push('/(tabs)/my-work' as never)}
+							onPress={() => router.push('/(tabs)/my-work' as `/${string}`)}
 						/>
 					)}
 					<MenuItem
 						icon="notifications-outline"
 						label="Notifications"
-						onPress={() => router.push('/(tabs)/bookings' as never)}
+						onPress={() => router.push('/(tabs)/bookings' as `/${string}`)}
 					/>
 				</View>
 

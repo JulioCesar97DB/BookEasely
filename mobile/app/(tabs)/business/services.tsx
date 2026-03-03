@@ -114,7 +114,7 @@ export default function ServicesScreen() {
 						</View>
 						<View style={styles.cardActions}>
 							<TouchableOpacity
-								onPress={() => router.push(`/(tabs)/business/add-service?id=${item.id}` as never)}
+								onPress={() => router.push(`/(tabs)/business/add-service?id=${item.id}` as `/${string}`)}
 								style={styles.iconButton}
 								activeOpacity={0.7}
 							>

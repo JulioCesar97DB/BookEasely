@@ -174,3 +174,54 @@ export interface WorkerInvitation {
 	created_at: string
 	accepted_at: string | null
 }
+
+// ── Supabase join query result types ─────────────────────────────────
+
+/**
+ * Cast an untyped Supabase query result to a specific type.
+ *
+ * The Supabase client in this project does not use generated database types,
+ * so join queries return loosely-inferred shapes that do not directly match
+ * our application interfaces. This helper performs the necessary runtime cast
+ * in a single, auditable location instead of scattering `as unknown as`
+ * throughout the codebase.
+ */
+export function typedQuery<T>(data: unknown): T {
+	return data as T
+}
+
+/** Booking row with joined service, business, worker, client profile, and reviews */
+export interface BookingWithDetails {
+	id: string
+	date: string
+	start_time: string
+	end_time: string
+	status: string
+	note: string | null
+	business_id: string
+	service_id: string
+	worker_id: string
+	services: Pick<Service, 'name' | 'duration_minutes' | 'price'> | null
+	businesses: Pick<Business, 'name' | 'slug'> | null
+	profiles?: { full_name: string } | null
+	workers: Pick<Worker, 'display_name'> | null
+	reviews: Pick<Review, 'id'>[]
+}
+
+/** Worker row with joined business name (used in worker dashboards and schedule pages) */
+export interface WorkerWithBusiness extends Pick<Worker, 'id' | 'display_name' | 'business_id'> {
+	businesses: { name: string } | null
+}
+
+/** Favorite row with nested business and category (used in favorites page) */
+export interface FavoriteWithBusiness {
+	id: string
+	business_id: string
+	businesses: BusinessWithCategory | null
+}
+
+/** Service worker join with nested active worker info (used in booking actions) */
+export interface ServiceWorkerWithDetails {
+	worker_id: string
+	workers: Pick<Worker, 'id' | 'display_name' | 'avatar_url' | 'is_active'> | null
+}

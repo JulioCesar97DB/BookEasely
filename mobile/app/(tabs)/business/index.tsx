@@ -149,7 +149,7 @@ export default function BusinessDashboard() {
 									key={action.route}
 									style={styles.actionCard}
 									activeOpacity={0.7}
-									onPress={() => router.push(action.route as never)}
+									onPress={() => router.push(action.route as `/${string}`)}
 								>
 									<View style={[styles.actionIcon, { backgroundColor: action.color + '15' }]}>
 										<Ionicons name={action.icon} size={22} color={action.color} />

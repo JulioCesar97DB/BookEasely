@@ -14,22 +14,12 @@ import { BOOKING_STATUS_COLORS } from '../../../lib/constants'
 import { handleSupabaseError } from '../../../lib/handle-error'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
-
-interface BookingItem {
-	id: string
-	date: string
-	start_time: string
-	end_time: string
-	status: string
-	note: string | null
-	services: { name: string; duration_minutes: number; price: number } | null
-	profiles: { full_name: string } | null
-}
+import { toWorkerAppointments, type WorkerAppointmentRow } from '../../../lib/types'
 
 export default function AppointmentsScreen() {
 	const { user } = useAuth()
 	const [loading, setLoading] = useState(true)
-	const [bookings, setBookings] = useState<BookingItem[]>([])
+	const [bookings, setBookings] = useState<WorkerAppointmentRow[]>([])
 	const [updating, setUpdating] = useState<string | null>(null)
 
 	useEffect(() => {
@@ -64,7 +54,7 @@ export default function AppointmentsScreen() {
 			.limit(100)
 
 		handleSupabaseError(error, 'Loading appointments')
-		setBookings((data ?? []) as unknown as BookingItem[])
+		setBookings(toWorkerAppointments(data ?? []))
 		setLoading(false)
 	}
 

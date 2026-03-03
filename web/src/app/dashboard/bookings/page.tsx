@@ -4,26 +4,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { BOOKING_STATUS_COLORS } from '@/lib/constants'
 import { getAuthUser, getIsWorker } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
+import { type BookingWithDetails, typedQuery } from '@/lib/types'
 import { Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { BookingActions } from './booking-actions'
-
-interface BookingRow {
-	id: string
-	date: string
-	start_time: string
-	end_time: string
-	status: string
-	note: string | null
-	business_id: string
-	service_id: string
-	worker_id: string
-	services: { name: string; duration_minutes: number; price: number } | null
-	businesses: { name: string; slug: string } | null
-	profiles: { full_name: string } | null
-	workers: { display_name: string } | null
-	reviews: { id: string }[]
-}
 
 
 export default async function BookingsPage() {
@@ -58,9 +42,8 @@ export default async function BookingsPage() {
 			: Promise.resolve({ data: [] }),
 	])
 
-	// Supabase join queries return complex inferred types; cast via unknown for safety
-	const clientBookings = (rawClientBookings ?? []) as unknown as BookingRow[]
-	const workerBookings = (workerBookingsResult.data ?? []) as unknown as BookingRow[]
+	const clientBookings = typedQuery<BookingWithDetails[]>(rawClientBookings ?? [])
+	const workerBookings = typedQuery<BookingWithDetails[]>(workerBookingsResult.data ?? [])
 	const today = new Date().toISOString().split('T')[0]!
 
 	return (
@@ -142,7 +125,7 @@ function BookingCard({
 	isWorkerView,
 	isPast,
 }: {
-	booking: BookingRow
+	booking: BookingWithDetails
 	label: string
 	sublabel: string
 	isWorkerView: boolean

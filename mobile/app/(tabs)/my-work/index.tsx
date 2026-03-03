@@ -15,19 +15,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../../lib/auth-context'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
-
-interface WorkerRecord {
-	id: string
-	display_name: string
-	business_id: string
-	businesses: { name: string } | null
-}
+import { toWorkersWithBusiness, type WorkerWithBusiness } from '../../../lib/types'
 
 export default function MyWorkScreen() {
 	const { user } = useAuth()
 	const router = useRouter()
 	const [loading, setLoading] = useState(true)
-	const [workers, setWorkers] = useState<WorkerRecord[]>([])
+	const [workers, setWorkers] = useState<WorkerWithBusiness[]>([])
 	const [todayCount, setTodayCount] = useState(0)
 	const [upcomingCount, setUpcomingCount] = useState(0)
 
@@ -40,7 +34,7 @@ export default function MyWorkScreen() {
 				.eq('user_id', user!.id)
 				.eq('is_active', true)
 
-			const records = (workerData ?? []) as unknown as WorkerRecord[]
+			const records = toWorkersWithBusiness(workerData ?? [])
 			setWorkers(records)
 
 			const workerIds = records.map((w) => w.id)
@@ -103,7 +97,7 @@ export default function MyWorkScreen() {
 						activeOpacity={0.7}
 						onPress={() => {
 							if (workers.length > 0) {
-								router.push({ pathname: '/(tabs)/my-work/schedule', params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } } as never)
+								router.push({ pathname: '/(tabs)/my-work/schedule' as `/${string}`, params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } })
 							}
 						}}
 					>
@@ -117,7 +111,7 @@ export default function MyWorkScreen() {
 						activeOpacity={0.7}
 						onPress={() => {
 							if (workers.length > 0) {
-								router.push({ pathname: '/(tabs)/my-work/blocked-dates', params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } } as never)
+								router.push({ pathname: '/(tabs)/my-work/blocked-dates' as `/${string}`, params: { workerId: workers[0]!.id, workerName: workers[0]!.display_name } })
 							}
 						}}
 					>
@@ -129,7 +123,7 @@ export default function MyWorkScreen() {
 					<TouchableOpacity
 						style={styles.actionBtn}
 						activeOpacity={0.7}
-						onPress={() => router.push('/(tabs)/my-work/appointments' as never)}
+						onPress={() => router.push('/(tabs)/my-work/appointments' as `/${string}`)}
 					>
 						<View style={styles.actionIcon}>
 							<Ionicons name="clipboard-outline" size={20} color={colors.primary} />

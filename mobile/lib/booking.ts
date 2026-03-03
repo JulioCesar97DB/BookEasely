@@ -3,6 +3,7 @@
 import { timeToMinutes, minutesToTime } from './format'
 export { formatTime, formatDuration } from './format'
 import { supabase } from './supabase'
+import { toServiceWorkerRows } from './types'
 
 export interface TimeSlot {
 	start: string // HH:MM
@@ -137,8 +138,9 @@ export async function getAvailableSlotsAnyWorker({
 	if (!serviceWorkerRows) return { slots: [] }
 
 	type WorkerInfo = { id: string; display_name: string; is_active: boolean }
-	const activeWorkers = serviceWorkerRows
-		.map((sw) => sw.workers as unknown as WorkerInfo | null)
+	const rows = toServiceWorkerRows(serviceWorkerRows)
+	const activeWorkers = rows
+		.map((sw) => sw.workers)
 		.filter((w): w is WorkerInfo => w !== null && w.is_active)
 
 	const allSlots: (TimeSlot & { workerId: string; workerName: string })[] = []

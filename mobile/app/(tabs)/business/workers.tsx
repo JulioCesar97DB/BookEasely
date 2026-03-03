@@ -138,7 +138,7 @@ export default function WorkersScreen() {
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={styles.inviteButton}
-								onPress={() => router.push(`/(tabs)/business/add-worker?businessId=${businessId}` as never)}
+								onPress={() => router.push(`/(tabs)/business/add-worker?businessId=${businessId}` as `/${string}`)}
 								activeOpacity={0.8}
 							>
 								<Ionicons name="mail-outline" size={18} color={colors.primary} />
@@ -159,7 +159,7 @@ export default function WorkersScreen() {
 								)}
 								<TouchableOpacity
 									style={styles.inviteWorkerButton}
-									onPress={() => router.push(`/(tabs)/business/add-worker?businessId=${businessId}` as never)}
+									onPress={() => router.push(`/(tabs)/business/add-worker?businessId=${businessId}` as `/${string}`)}
 									activeOpacity={0.7}
 								>
 									<Ionicons name="mail-outline" size={18} color={colors.white} />
@@ -207,7 +207,7 @@ export default function WorkersScreen() {
 						<View style={styles.card}>
 							<TouchableOpacity
 								style={styles.cardMain}
-								onPress={() => router.push(`/(tabs)/business/add-worker?id=${worker.id}&businessId=${businessId}` as never)}
+								onPress={() => router.push(`/(tabs)/business/add-worker?id=${worker.id}&businessId=${businessId}` as `/${string}`)}
 								activeOpacity={0.7}
 							>
 								<View style={styles.avatar}>
@@ -252,7 +252,7 @@ export default function WorkersScreen() {
 							<View style={styles.cardActions}>
 								<TouchableOpacity
 									style={styles.actionButton}
-									onPress={() => router.push(`/(tabs)/business/worker-availability?workerId=${worker.id}&workerName=${encodeURIComponent(worker.display_name)}` as never)}
+									onPress={() => router.push(`/(tabs)/business/worker-availability?workerId=${worker.id}&workerName=${encodeURIComponent(worker.display_name)}` as `/${string}`)}
 									activeOpacity={0.7}
 								>
 									<Ionicons name="time-outline" size={15} color={colors.primary} />
@@ -261,7 +261,7 @@ export default function WorkersScreen() {
 								<View style={styles.actionDivider} />
 								<TouchableOpacity
 									style={styles.actionButton}
-									onPress={() => router.push(`/(tabs)/business/worker-blocked-dates?workerId=${worker.id}&workerName=${encodeURIComponent(worker.display_name)}` as never)}
+									onPress={() => router.push(`/(tabs)/business/worker-blocked-dates?workerId=${worker.id}&workerName=${encodeURIComponent(worker.display_name)}` as `/${string}`)}
 									activeOpacity={0.7}
 								>
 									<Ionicons name="calendar-outline" size={15} color={colors.primary} />
