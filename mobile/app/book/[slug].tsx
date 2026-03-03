@@ -4,22 +4,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
-	FlatList,
-	Image,
 	ScrollView,
 	StyleSheet,
 	Text,
-	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../lib/auth-context'
-import { createBooking, formatDuration, formatTime, getAvailableSlots, getAvailableSlotsAnyWorker, type TimeSlot } from '../../lib/booking'
-import { getInitials } from '../../lib/format'
+import { createBooking, getAvailableSlots, getAvailableSlotsAnyWorker, type TimeSlot } from '../../lib/booking'
+import { handleSupabaseError } from '../../lib/handle-error'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 import type { Service, Worker } from '../../lib/types'
+import { ServiceStep } from '../../components/booking/service-step'
+import { WorkerStep } from '../../components/booking/worker-step'
+import { DateTimeStep } from '../../components/booking/datetime-step'
+import { ConfirmStep } from '../../components/booking/confirm-step'
+import { SuccessStep } from '../../components/booking/success-step'
 
 type Step = 'service' | 'worker' | 'datetime' | 'confirm' | 'success'
 
@@ -51,9 +53,9 @@ export default function BookScreen() {
 	useEffect(() => {
 		if (!user) { router.replace('/(auth)/login'); return }
 		async function load() {
-			const { data: biz } = await supabase
+			const { data: biz, error: bizError } = await supabase
 				.from('businesses').select('id, name, auto_confirm').eq('slug', slug).eq('is_active', true).single()
-			if (!biz) { setIsLoading(false); return }
+			if (handleSupabaseError(bizError, 'Loading business') || !biz) { setIsLoading(false); return }
 			setBusinessId(biz.id)
 			setBusinessName(biz.name)
 			setAutoConfirm(biz.auto_confirm)
@@ -63,6 +65,9 @@ export default function BookScreen() {
 				supabase.from('workers').select('*').eq('business_id', biz.id).eq('is_active', true).order('display_name'),
 				supabase.from('service_workers').select('service_id, worker_id'),
 			])
+			handleSupabaseError(svc.error, 'Loading services')
+			handleSupabaseError(wrk.error, 'Loading workers')
+			handleSupabaseError(sw.error, 'Loading service workers')
 			setServices(svc.data ?? [])
 			setWorkers(wrk.data ?? [])
 			setServiceWorkers(sw.data ?? [])
@@ -87,7 +92,6 @@ export default function BookScreen() {
 		return workers.filter((w) => ids.includes(w.id))
 	}, [selectedService, serviceWorkerMap, workers])
 
-	// Generate date options (next 14 days)
 	const dateOptions = useMemo(() => {
 		const dates: { label: string; value: string }[] = []
 		const now = new Date()
@@ -150,6 +154,13 @@ export default function BookScreen() {
 		}
 	}, [businessId, selectedService, resolvedWorkerId, selectedDate, selectedSlot, note])
 
+	const goBack = useCallback(() => {
+		if (step === 'service') router.back()
+		else if (step === 'worker') setStep('service')
+		else if (step === 'datetime') setStep('worker')
+		else setStep('datetime')
+	}, [step, router])
+
 	if (isLoading) {
 		return (
 			<SafeAreaView style={styles.container}>
@@ -161,32 +172,16 @@ export default function BookScreen() {
 	if (step === 'success') {
 		return (
 			<SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-				<View style={styles.successContainer}>
-					<View style={styles.successIcon}>
-						<Ionicons name="checkmark-circle" size={64} color={colors.success} />
-					</View>
-					<Text style={styles.successTitle}>
-						Booking {autoConfirm ? 'Confirmed' : 'Requested'}!
-					</Text>
-					<Text style={styles.successSubtitle}>
-						{autoConfirm
-							? 'Your appointment has been confirmed.'
-							: 'The business will confirm your booking shortly.'}
-					</Text>
-					<View style={styles.summaryCard}>
-						<SummaryRow label="Business" value={businessName} />
-						<SummaryRow label="Service" value={selectedService?.name ?? ''} />
-						<SummaryRow label="Professional" value={resolvedWorkerName || 'Assigned professional'} />
-						<SummaryRow label="Date" value={selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''} />
-						<SummaryRow label="Time" value={selectedSlot ? `${formatTime(selectedSlot.start)} - ${formatTime(selectedSlot.end)}` : ''} />
-					</View>
-					<TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)/bookings')} activeOpacity={0.8}>
-						<Text style={styles.primaryButtonText}>View My Bookings</Text>
-					</TouchableOpacity>
-					<TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-						<Text style={styles.linkText}>Back to Business</Text>
-					</TouchableOpacity>
-				</View>
+				<SuccessStep
+					autoConfirm={autoConfirm}
+					businessName={businessName}
+					selectedService={selectedService}
+					resolvedWorkerName={resolvedWorkerName}
+					selectedDate={selectedDate}
+					selectedSlot={selectedSlot}
+					onViewBookings={() => router.replace('/(tabs)/bookings')}
+					onGoBack={() => router.back()}
+				/>
 			</SafeAreaView>
 		)
 	}
@@ -195,7 +190,7 @@ export default function BookScreen() {
 		<SafeAreaView style={styles.container} edges={['top']}>
 			{/* Header */}
 			<View style={styles.header}>
-				<TouchableOpacity onPress={() => step === 'service' ? router.back() : setStep(step === 'worker' ? 'service' : step === 'datetime' ? 'worker' : 'datetime')} style={styles.backBtn}>
+				<TouchableOpacity onPress={goBack} style={styles.backBtn}>
 					<Ionicons name="chevron-back" size={22} color={colors.foreground} />
 				</TouchableOpacity>
 				<Text style={styles.headerTitle}>Book Appointment</Text>
@@ -214,184 +209,51 @@ export default function BookScreen() {
 
 			<ScrollView style={styles.content} contentContainerStyle={styles.contentPadding} showsVerticalScrollIndicator={false}>
 				{step === 'service' && (
-					<>
-						<Text style={styles.stepTitle}>Select a Service</Text>
-						{services.map((service) => (
-							<TouchableOpacity
-								key={service.id}
-								style={styles.optionCard}
-								activeOpacity={0.7}
-								onPress={() => { setSelectedService(service); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setStep('worker') }}
-							>
-								<View style={styles.optionInfo}>
-									<Text style={styles.optionName}>{service.name}</Text>
-									{service.description && <Text style={styles.optionDesc} numberOfLines={1}>{service.description}</Text>}
-									<View style={styles.optionMeta}>
-										<Ionicons name="time-outline" size={12} color={colors.foregroundSecondary} />
-										<Text style={styles.optionMetaText}>{formatDuration(service.duration_minutes)}</Text>
-									</View>
-								</View>
-								<Text style={styles.optionPrice}>${Number(service.price).toFixed(0)}</Text>
-							</TouchableOpacity>
-						))}
-					</>
+					<ServiceStep
+						services={services}
+						onSelect={(service) => { setSelectedService(service); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setStep('worker') }}
+					/>
 				)}
 
-				{step === 'worker' && (
-					<>
-						<Text style={styles.stepTitle}>Select a Professional</Text>
-						<Text style={styles.stepSubtitle}>For: {selectedService?.name}</Text>
-						{availableWorkers.length >= 2 && (
-							<TouchableOpacity
-								style={styles.optionCard}
-								activeOpacity={0.7}
-								onPress={() => { setAnyWorkerMode(true); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setSlotWorkerMap(new Map()); setStep('datetime') }}
-							>
-								<View style={styles.workerRow}>
-									<View style={[styles.workerAvatar, { backgroundColor: colors.primaryLight }]}>
-										<Ionicons name="shuffle" size={20} color={colors.primary} />
-									</View>
-									<View style={styles.optionInfo}>
-										<Text style={styles.optionName}>Any available professional</Text>
-										<Text style={styles.optionDesc}>We'll find the best time for you</Text>
-									</View>
-								</View>
-							</TouchableOpacity>
-						)}
-						{availableWorkers.map((worker) => (
-							<TouchableOpacity
-								key={worker.id}
-								style={styles.optionCard}
-								activeOpacity={0.7}
-								onPress={() => { setAnyWorkerMode(false); setSelectedWorker(worker); setSelectedDate(null); setSelectedSlot(null); setStep('datetime') }}
-							>
-								<View style={styles.workerRow}>
-									<View style={styles.workerAvatar}>
-										{worker.avatar_url ? (
-											<Image source={{ uri: worker.avatar_url }} style={styles.workerAvatarImg} />
-										) : (
-											<Text style={styles.workerAvatarText}>{getInitials(worker.display_name)}</Text>
-										)}
-									</View>
-									<View style={styles.optionInfo}>
-										<Text style={styles.optionName}>{worker.display_name}</Text>
-										{worker.bio && <Text style={styles.optionDesc} numberOfLines={1}>{worker.bio}</Text>}
-									</View>
-								</View>
-							</TouchableOpacity>
-						))}
-					</>
+				{step === 'worker' && selectedService && (
+					<WorkerStep
+						selectedService={selectedService}
+						availableWorkers={availableWorkers}
+						onSelectWorker={(worker) => { setAnyWorkerMode(false); setSelectedWorker(worker); setSelectedDate(null); setSelectedSlot(null); setStep('datetime') }}
+						onSelectAny={() => { setAnyWorkerMode(true); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setSlotWorkerMap(new Map()); setStep('datetime') }}
+					/>
 				)}
 
-				{step === 'datetime' && (
-					<>
-						<Text style={styles.stepTitle}>Select Date & Time</Text>
-						<Text style={styles.stepSubtitle}>{selectedService?.name} with {anyWorkerMode ? 'any available professional' : selectedWorker?.display_name}</Text>
-
-						{/* Date Chips */}
-						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateChips}>
-							{dateOptions.map((d) => (
-								<TouchableOpacity
-									key={d.value}
-									style={[styles.dateChip, selectedDate === d.value && styles.dateChipActive]}
-									onPress={() => handleSelectDate(d.value)}
-									activeOpacity={0.7}
-								>
-									<Text style={[styles.dateChipText, selectedDate === d.value && styles.dateChipTextActive]}>{d.label}</Text>
-								</TouchableOpacity>
-							))}
-						</ScrollView>
-
-						{/* Time Slots */}
-						{!selectedDate && (
-							<View style={styles.placeholderBox}>
-								<Ionicons name="calendar-outline" size={32} color={colors.border} />
-								<Text style={styles.placeholderText}>Select a date to see times</Text>
-							</View>
-						)}
-						{selectedDate && loadingSlots && (
-							<View style={styles.placeholderBox}>
-								<ActivityIndicator size="small" color={colors.primary} />
-								<Text style={styles.placeholderText}>Loading times...</Text>
-							</View>
-						)}
-						{selectedDate && !loadingSlots && availableSlots.length === 0 && (
-							<View style={styles.placeholderBox}>
-								<Ionicons name="time-outline" size={32} color={colors.border} />
-								<Text style={styles.placeholderText}>No available times</Text>
-							</View>
-						)}
-						{selectedDate && !loadingSlots && availableSlots.length > 0 && (
-							<View style={styles.slotsGrid}>
-								{availableSlots.map((slot) => (
-									<TouchableOpacity
-										key={slot.start}
-										style={[styles.slotChip, selectedSlot?.start === slot.start && styles.slotChipActive]}
-										onPress={() => { setSelectedSlot(slot); setStep('confirm') }}
-										activeOpacity={0.7}
-									>
-										<Text style={[styles.slotChipText, selectedSlot?.start === slot.start && styles.slotChipTextActive]}>
-											{formatTime(slot.start)}
-										</Text>
-									</TouchableOpacity>
-								))}
-							</View>
-						)}
-					</>
+				{step === 'datetime' && selectedService && (
+					<DateTimeStep
+						selectedService={selectedService}
+						selectedWorker={selectedWorker}
+						anyWorkerMode={anyWorkerMode}
+						dateOptions={dateOptions}
+						selectedDate={selectedDate}
+						loadingSlots={loadingSlots}
+						availableSlots={availableSlots}
+						selectedSlot={selectedSlot}
+						onSelectDate={handleSelectDate}
+						onSelectSlot={(slot) => { setSelectedSlot(slot); setStep('confirm') }}
+					/>
 				)}
 
 				{step === 'confirm' && selectedService && resolvedWorkerId && selectedDate && selectedSlot && (
-					<>
-						<Text style={styles.stepTitle}>Confirm Booking</Text>
-						<View style={styles.summaryCard}>
-							<SummaryRow label="Business" value={businessName} />
-							<SummaryRow label="Service" value={selectedService.name} />
-							<SummaryRow label="Professional" value={resolvedWorkerName} />
-							<SummaryRow label="Date" value={new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} />
-							<SummaryRow label="Time" value={`${formatTime(selectedSlot.start)} - ${formatTime(selectedSlot.end)}`} />
-							<SummaryRow label="Duration" value={formatDuration(selectedService.duration_minutes)} />
-							<View style={styles.summaryDivider} />
-							<View style={styles.summaryRow}>
-								<Text style={styles.summaryLabelBold}>Total</Text>
-								<Text style={styles.summaryValueBold}>${Number(selectedService.price).toFixed(2)}</Text>
-							</View>
-						</View>
-
-						<Text style={styles.noteLabel}>Note (optional)</Text>
-						<TextInput
-							style={styles.noteInput}
-							placeholder="Special requests..."
-							placeholderTextColor={colors.foregroundSecondary}
-							value={note}
-							onChangeText={setNote}
-							multiline
-						/>
-
-						<TouchableOpacity
-							style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
-							onPress={handleConfirm}
-							disabled={submitting}
-							activeOpacity={0.8}
-						>
-							{submitting ? (
-								<ActivityIndicator size="small" color={colors.white} />
-							) : (
-								<Text style={styles.primaryButtonText}>Confirm Booking - ${Number(selectedService.price).toFixed(0)}</Text>
-							)}
-						</TouchableOpacity>
-					</>
+					<ConfirmStep
+						businessName={businessName}
+						selectedService={selectedService}
+						resolvedWorkerName={resolvedWorkerName}
+						selectedDate={selectedDate}
+						selectedSlot={selectedSlot}
+						note={note}
+						onNoteChange={setNote}
+						submitting={submitting}
+						onConfirm={handleConfirm}
+					/>
 				)}
 			</ScrollView>
 		</SafeAreaView>
-	)
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-	return (
-		<View style={styles.summaryRow}>
-			<Text style={styles.summaryLabel}>{label}</Text>
-			<Text style={styles.summaryValue}>{value}</Text>
-		</View>
 	)
 }
 
@@ -409,46 +271,4 @@ const styles = StyleSheet.create({
 	progressLineActive: { backgroundColor: colors.primary },
 	content: { flex: 1 },
 	contentPadding: { paddingHorizontal: spacing['2xl'], paddingBottom: spacing['5xl'] },
-	stepTitle: { fontSize: fontSize.xl, fontWeight: '700', color: colors.foreground, marginBottom: spacing.sm },
-	stepSubtitle: { fontSize: fontSize.sm, color: colors.foregroundSecondary, marginBottom: spacing.lg },
-	optionCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-	optionInfo: { flex: 1 },
-	optionName: { fontSize: fontSize.sm, fontWeight: '600', color: colors.foreground },
-	optionDesc: { fontSize: fontSize.xs, color: colors.foregroundSecondary, marginTop: 2 },
-	optionMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
-	optionMetaText: { fontSize: fontSize.xs, color: colors.foregroundSecondary },
-	optionPrice: { fontSize: fontSize.base, fontWeight: '600', color: colors.foreground, marginLeft: spacing.md },
-	workerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
-	workerAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceSecondary, justifyContent: 'center', alignItems: 'center' },
-	workerAvatarImg: { width: 40, height: 40, borderRadius: 20 },
-	workerAvatarText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.foregroundSecondary },
-	dateChips: { gap: spacing.sm, paddingVertical: spacing.md },
-	dateChip: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-	dateChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-	dateChipText: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground },
-	dateChipTextActive: { color: colors.white },
-	placeholderBox: { alignItems: 'center', paddingVertical: spacing['5xl'], gap: spacing.sm },
-	placeholderText: { fontSize: fontSize.sm, color: colors.foregroundSecondary },
-	slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
-	slotChip: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-	slotChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-	slotChipText: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground },
-	slotChipTextActive: { color: colors.white },
-	summaryCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.lg },
-	summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
-	summaryLabel: { fontSize: fontSize.sm, color: colors.foregroundSecondary },
-	summaryValue: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground },
-	summaryLabelBold: { fontSize: fontSize.sm, fontWeight: '600', color: colors.foreground },
-	summaryValueBold: { fontSize: fontSize.lg, fontWeight: '700', color: colors.foreground },
-	summaryDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
-	noteLabel: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground, marginBottom: spacing.xs },
-	noteInput: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, fontSize: fontSize.sm, color: colors.foreground, minHeight: 80, textAlignVertical: 'top', marginBottom: spacing.lg },
-	primaryButton: { backgroundColor: colors.primary, height: 48, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
-	primaryButtonDisabled: { opacity: 0.6 },
-	primaryButtonText: { fontSize: fontSize.base, fontWeight: '600', color: colors.white },
-	linkText: { fontSize: fontSize.sm, color: colors.primary, textAlign: 'center', fontWeight: '500' },
-	successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing['2xl'] },
-	successIcon: { marginBottom: spacing.lg },
-	successTitle: { fontSize: fontSize['2xl'], fontWeight: '700', color: colors.foreground, marginBottom: spacing.sm },
-	successSubtitle: { fontSize: fontSize.sm, color: colors.foregroundSecondary, textAlign: 'center', marginBottom: spacing['2xl'] },
 })
