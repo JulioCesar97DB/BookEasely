@@ -158,6 +158,22 @@ export async function getAvailableSlotsAnyWorker({
 	return { slots: allSlots }
 }
 
+export async function cancelBooking({ bookingId, reason }: { bookingId: string; reason?: string }): Promise<{ error?: string }> {
+	const { data: { user } } = await supabase.auth.getUser()
+	if (!user) return { error: 'Not authenticated' }
+	const { error } = await supabase
+		.from('bookings')
+		.update({
+			status: 'cancelled' as const,
+			cancelled_by: user.id,
+			cancellation_reason: reason || null,
+			updated_at: new Date().toISOString(),
+		})
+		.eq('id', bookingId)
+	if (error) return { error: error.message }
+	return {}
+}
+
 export async function rescheduleBooking({
 	bookingId,
 	workerId,

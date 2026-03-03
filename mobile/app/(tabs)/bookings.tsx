@@ -5,9 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
-	Modal,
 	RefreshControl,
-	ScrollView,
 	SectionList,
 	StyleSheet,
 	Text,
@@ -15,25 +13,13 @@ import {
 	View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { BookingCard, type BookingItem } from '../../components/bookings/booking-card'
+import { RescheduleModal } from '../../components/bookings/reschedule-modal'
 import { useAuth } from '../../lib/auth-context'
-import { formatTime, getAvailableSlots, rescheduleBooking, type TimeSlot } from '../../lib/booking'
-import { BOOKING_STATUS_COLORS } from '../../lib/constants'
+import { cancelBooking, getAvailableSlots, rescheduleBooking, type TimeSlot } from '../../lib/booking'
+import { handleSupabaseError } from '../../lib/handle-error'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
-
-interface BookingItem {
-	id: string
-	date: string
-	start_time: string
-	end_time: string
-	status: string
-	business_id: string
-	service_id: string
-	worker_id: string
-	services: { name: string; price: number } | null
-	businesses: { name: string; slug: string } | null
-	workers: { display_name: string } | null
-}
 
 export default function BookingsScreen() {
 	const { user } = useAuth()
@@ -51,12 +37,13 @@ export default function BookingsScreen() {
 
 	const fetchBookings = useCallback(async () => {
 		if (!user) return
-		const { data } = await supabase
+		const { data, error } = await supabase
 			.from('bookings')
 			.select('id, date, start_time, end_time, status, business_id, service_id, worker_id, services(name, price), businesses(name, slug), workers(display_name)')
 			.eq('client_id', user.id)
 			.order('date', { ascending: false })
 			.limit(50)
+		handleSupabaseError(error, 'Loading bookings')
 		setBookings((data ?? []) as unknown as BookingItem[])
 		setLoading(false)
 		setRefreshing(false)
@@ -69,12 +56,16 @@ export default function BookingsScreen() {
 			{ text: 'Keep', style: 'cancel' },
 			{
 				text: 'Cancel Booking', style: 'destructive', onPress: async () => {
-					await supabase.from('bookings').update({ status: 'cancelled', cancelled_by: user!.id }).eq('id', bookingId)
-					fetchBookings()
+					const result = await cancelBooking({ bookingId })
+					if (result.error) {
+						Alert.alert('Error', result.error)
+					} else {
+						fetchBookings()
+					}
 				},
 			},
 		])
-	}, [user, fetchBookings])
+	}, [fetchBookings])
 
 	// Reschedule date options (next 14 days)
 	const dateOptions = useMemo(() => {
@@ -186,129 +177,33 @@ export default function BookingsScreen() {
 						renderSectionHeader={({ section }) => (
 							<Text style={styles.sectionHeader}>{section.title}</Text>
 						)}
-						renderItem={({ item }) => {
-							const isPast = item.date < today || item.status === 'cancelled'
-							const canCancel = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
-							const canReschedule = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
-							const statusColor = BOOKING_STATUS_COLORS[item.status] ?? { bg: '#F3F4F6', text: '#374151' }
-							return (
-								<View style={[styles.bookingCard, isPast && styles.bookingCardPast]}>
-									<View style={styles.dateBox}>
-										<Text style={styles.dateMonth}>{new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })}</Text>
-										<Text style={styles.dateDay}>{new Date(item.date + 'T00:00:00').getDate()}</Text>
-									</View>
-									<View style={styles.bookingInfo}>
-										<Text style={styles.bookingBusiness}>{item.businesses?.name ?? 'Business'}</Text>
-										<Text style={styles.bookingService}>
-											{item.services?.name ?? 'Service'}{item.workers?.display_name ? ` with ${item.workers.display_name}` : ''}
-										</Text>
-										<Text style={styles.bookingTime}>
-											{formatTime(item.start_time)} - {formatTime(item.end_time)}
-										</Text>
-									</View>
-									<View style={styles.bookingRight}>
-										<View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-											<Text style={[styles.statusText, { color: statusColor.text }]}>{item.status}</Text>
-										</View>
-										{canReschedule && (
-											<TouchableOpacity onPress={() => handleRescheduleOpen(item)} activeOpacity={0.7}>
-												<Text style={styles.rescheduleText}>Reschedule</Text>
-											</TouchableOpacity>
-										)}
-										{canCancel && (
-											<TouchableOpacity onPress={() => handleCancel(item.id)} activeOpacity={0.7}>
-												<Text style={styles.cancelText}>Cancel</Text>
-											</TouchableOpacity>
-										)}
-									</View>
-								</View>
-							)
-						}}
+						renderItem={({ item }) => (
+							<BookingCard
+								item={item}
+								today={today}
+								onCancel={handleCancel}
+								onReschedule={handleRescheduleOpen}
+							/>
+						)}
 						contentContainerStyle={styles.listContent}
 						refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBookings() }} tintColor={colors.primary} />}
 					/>
 				)}
 
-				{/* Reschedule Modal */}
-				<Modal visible={!!rescheduleBookingItem} animationType="slide" transparent>
-					<View style={styles.modalOverlay}>
-						<View style={styles.modalContent}>
-							<View style={styles.modalHeader}>
-								<Text style={styles.modalTitle}>Reschedule Booking</Text>
-								<TouchableOpacity onPress={handleRescheduleClose} activeOpacity={0.7}>
-									<Ionicons name="close" size={24} color={colors.foreground} />
-								</TouchableOpacity>
-							</View>
-							<Text style={styles.modalSubtitle}>Pick a new date and time</Text>
-
-							{/* Date chips */}
-							<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateChips}>
-								{dateOptions.map((d) => (
-									<TouchableOpacity
-										key={d.value}
-										style={[styles.dateChip, rescheduleDate === d.value && styles.dateChipActive]}
-										onPress={() => handleRescheduleDateSelect(d.value)}
-										activeOpacity={0.7}
-									>
-										<Text style={[styles.dateChipText, rescheduleDate === d.value && styles.dateChipTextActive]}>{d.label}</Text>
-									</TouchableOpacity>
-								))}
-							</ScrollView>
-
-							{/* Time slots */}
-							<ScrollView style={styles.slotsScroll} contentContainerStyle={styles.slotsScrollContent}>
-								{!rescheduleDate && (
-									<View style={styles.placeholderBox}>
-										<Ionicons name="calendar-outline" size={28} color={colors.border} />
-										<Text style={styles.placeholderText}>Select a date to see times</Text>
-									</View>
-								)}
-								{rescheduleDate && rescheduleLoadingSlots && (
-									<View style={styles.placeholderBox}>
-										<ActivityIndicator size="small" color={colors.primary} />
-										<Text style={styles.placeholderText}>Loading times...</Text>
-									</View>
-								)}
-								{rescheduleDate && !rescheduleLoadingSlots && rescheduleSlots.length === 0 && (
-									<View style={styles.placeholderBox}>
-										<Ionicons name="time-outline" size={28} color={colors.border} />
-										<Text style={styles.placeholderText}>No available times</Text>
-									</View>
-								)}
-								{rescheduleDate && !rescheduleLoadingSlots && rescheduleSlots.length > 0 && (
-									<View style={styles.slotsGrid}>
-										{rescheduleSlots.map((slot) => (
-											<TouchableOpacity
-												key={slot.start}
-												style={[styles.slotChip, rescheduleSelectedSlot?.start === slot.start && styles.slotChipActive]}
-												onPress={() => setRescheduleSelectedSlot(slot)}
-												activeOpacity={0.7}
-											>
-												<Text style={[styles.slotChipText, rescheduleSelectedSlot?.start === slot.start && styles.slotChipTextActive]}>
-													{formatTime(slot.start)}
-												</Text>
-											</TouchableOpacity>
-										))}
-									</View>
-								)}
-							</ScrollView>
-
-							{/* Confirm button */}
-							<TouchableOpacity
-								style={[styles.confirmBtn, (!rescheduleSelectedSlot || rescheduleSubmitting) && styles.confirmBtnDisabled]}
-								onPress={handleRescheduleConfirm}
-								disabled={!rescheduleSelectedSlot || rescheduleSubmitting}
-								activeOpacity={0.8}
-							>
-								{rescheduleSubmitting ? (
-									<ActivityIndicator size="small" color={colors.white} />
-								) : (
-									<Text style={styles.confirmBtnText}>Confirm New Time</Text>
-								)}
-							</TouchableOpacity>
-						</View>
-					</View>
-				</Modal>
+				<RescheduleModal
+					visible={!!rescheduleBookingItem}
+					rescheduleBookingItem={rescheduleBookingItem}
+					dateOptions={dateOptions}
+					rescheduleDate={rescheduleDate}
+					rescheduleLoadingSlots={rescheduleLoadingSlots}
+					rescheduleSlots={rescheduleSlots}
+					rescheduleSelectedSlot={rescheduleSelectedSlot}
+					rescheduleSubmitting={rescheduleSubmitting}
+					onClose={handleRescheduleClose}
+					onDateSelect={handleRescheduleDateSelect}
+					onSlotSelect={setRescheduleSelectedSlot}
+					onConfirm={handleRescheduleConfirm}
+				/>
 			</SafeAreaView>
 		</AnimatedScreen>
 	)
@@ -320,46 +215,9 @@ const styles = StyleSheet.create({
 	title: { fontSize: fontSize['2xl'], fontWeight: '700', color: colors.foreground, letterSpacing: -0.5 },
 	listContent: { paddingHorizontal: spacing['2xl'], paddingBottom: spacing['3xl'] },
 	sectionHeader: { fontSize: fontSize.base, fontWeight: '600', color: colors.foreground, marginTop: spacing.lg, marginBottom: spacing.sm },
-	bookingCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.sm },
-	bookingCardPast: { opacity: 0.6 },
-	dateBox: { width: 44, height: 48, borderRadius: radius.sm, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center' },
-	dateMonth: { fontSize: 10, fontWeight: '500', color: colors.primary, textTransform: 'uppercase' },
-	dateDay: { fontSize: fontSize.lg, fontWeight: '700', color: colors.primary },
-	bookingInfo: { flex: 1 },
-	bookingBusiness: { fontSize: fontSize.sm, fontWeight: '600', color: colors.foreground },
-	bookingService: { fontSize: fontSize.xs, color: colors.foregroundSecondary, marginTop: 1 },
-	bookingTime: { fontSize: fontSize.xs, color: colors.foregroundSecondary, marginTop: 2 },
-	bookingRight: { alignItems: 'flex-end', gap: spacing.xs },
-	statusBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-	statusText: { fontSize: 10, fontWeight: '600' },
-	rescheduleText: { fontSize: fontSize.xs, color: colors.primary, fontWeight: '500' },
-	cancelText: { fontSize: fontSize.xs, color: colors.destructive, fontWeight: '500' },
 	emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md, paddingBottom: 100 },
 	emptyTitle: { fontSize: fontSize.lg, fontWeight: '600', color: colors.foregroundSecondary },
 	emptySubtitle: { fontSize: fontSize.sm, color: colors.foregroundSecondary, textAlign: 'center', paddingHorizontal: spacing['4xl'] },
 	signInBtn: { marginTop: spacing.md, paddingHorizontal: spacing['2xl'], paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: colors.primary },
 	signInBtnText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.white },
-	// Reschedule modal styles
-	modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-	modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing['2xl'], paddingTop: spacing.lg, paddingBottom: spacing['5xl'], maxHeight: '80%' },
-	modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
-	modalTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.foreground },
-	modalSubtitle: { fontSize: fontSize.sm, color: colors.foregroundSecondary, marginBottom: spacing.lg },
-	dateChips: { gap: spacing.sm, paddingVertical: spacing.sm },
-	dateChip: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-	dateChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-	dateChipText: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground },
-	dateChipTextActive: { color: colors.white },
-	slotsScroll: { maxHeight: 220, marginTop: spacing.md },
-	slotsScrollContent: { paddingBottom: spacing.md },
-	placeholderBox: { alignItems: 'center', paddingVertical: spacing['3xl'], gap: spacing.sm },
-	placeholderText: { fontSize: fontSize.sm, color: colors.foregroundSecondary },
-	slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-	slotChip: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-	slotChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-	slotChipText: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground },
-	slotChipTextActive: { color: colors.white },
-	confirmBtn: { backgroundColor: colors.primary, height: 48, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginTop: spacing.lg },
-	confirmBtnDisabled: { opacity: 0.5 },
-	confirmBtnText: { fontSize: fontSize.base, fontWeight: '600', color: colors.white },
 })
