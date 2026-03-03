@@ -37,6 +37,15 @@ export function AvailabilitySection({
 	}
 
 	async function handleSave() {
+		// Validate time ranges
+		for (const day of schedule) {
+			if (!day.is_active) continue
+			if (day.start_time >= day.end_time) {
+				toast.error(`End time must be after start time for ${DAYS_FULL[day.day_of_week]?.slice(0, 3)}`)
+				return
+			}
+		}
+
 		setSaving(true)
 		const result = await upsertWorkerAvailability(workerId, schedule)
 		setSaving(false)

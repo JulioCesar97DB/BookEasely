@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { markAllNotificationsRead, markNotificationRead } from '@/lib/booking/actions'
 import type { Notification } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { Bell, Calendar, CheckCheck, MessageSquare, Star, XCircle } from 'lucide-react'
+import { Bell, Calendar, CheckCheck, Mail, MessageSquare, Star, UserPlus, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
 
@@ -15,6 +15,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 	booking_reminder: Bell,
 	booking_cancelled: XCircle,
 	new_review: Star,
+	worker_added: UserPlus,
+	worker_invitation: Mail,
 }
 
 function formatRelativeTime(dateStr: string) {
@@ -44,13 +46,35 @@ export function NotificationsList({ notifications }: { notifications: Notificati
 		})
 	}
 
-	function handleClick(notification: Notification) {
-		if (!notification.is_read) {
-			startTransition(async () => {
-				await markNotificationRead(notification.id)
-				router.refresh()
-			})
+	function getNotificationHref(type: string): string | null {
+		switch (type) {
+			case 'new_booking':
+			case 'booking_confirmed':
+			case 'booking_cancelled':
+			case 'booking_reminder':
+				return '/dashboard/bookings'
+			case 'new_review':
+				return '/dashboard/reviews'
+			case 'worker_added':
+			case 'worker_invitation':
+				return '/dashboard'
+			default:
+				return null
 		}
+	}
+
+	function handleClick(notification: Notification) {
+		startTransition(async () => {
+			if (!notification.is_read) {
+				await markNotificationRead(notification.id)
+			}
+			const href = getNotificationHref(notification.type)
+			if (href) {
+				router.push(href)
+			} else {
+				router.refresh()
+			}
+		})
 	}
 
 	return (

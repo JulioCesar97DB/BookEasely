@@ -16,6 +16,7 @@ import { useAuth } from '../../../lib/auth-context'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import { toWorkersWithBusiness, type WorkerWithBusiness } from '../../../lib/types'
+import { MyInvitations } from '../../../components/workers/my-invitations'
 
 export default function MyWorkScreen() {
 	const { user } = useAuth()
@@ -89,6 +90,9 @@ export default function MyWorkScreen() {
 						<Text style={styles.statLabel}>Businesses</Text>
 					</View>
 				</Animated.View>
+
+				{/* Pending Invitations */}
+				<MyInvitations onAccepted={() => router.replace('/(tabs)/my-work' as `/${string}`)} />
 
 				{/* Quick Actions */}
 				<Animated.View entering={FadeInDown.delay(100).duration(200)} style={styles.actionsRow}>

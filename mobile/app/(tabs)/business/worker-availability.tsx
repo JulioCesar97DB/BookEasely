@@ -62,6 +62,20 @@ export default function WorkerAvailabilityScreen() {
 
 	async function handleSave() {
 		if (!workerId) return
+
+		// Validate time ranges for active days
+		for (const entry of availability) {
+			if (!entry.is_active) continue
+			if (entry.start_time >= entry.end_time) {
+				Alert.alert('Invalid Time', `End time must be after start time for ${DAYS_FULL[entry.day_of_week]}`)
+				return
+			}
+			if (!/^\d{2}:\d{2}$/.test(entry.start_time) || !/^\d{2}:\d{2}$/.test(entry.end_time)) {
+				Alert.alert('Invalid Format', `Use HH:MM format for ${DAYS_FULL[entry.day_of_week]}`)
+				return
+			}
+		}
+
 		setSaving(true)
 
 		const rows = availability.map((a) => ({

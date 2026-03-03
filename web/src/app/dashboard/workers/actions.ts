@@ -150,6 +150,16 @@ export async function inviteWorker(
 			accepted_at: new Date().toISOString(),
 		})
 
+		// Notify the worker they've been added
+		const { data: biz } = await supabase.from('businesses').select('name').eq('id', businessId).single()
+		await supabase.from('notifications').insert({
+			user_id: existingProfile.id,
+			type: 'worker_added',
+			title: 'Added to team',
+			message: `You were added as a worker at ${biz?.name ?? 'a business'}`,
+			data: { business_id: businessId },
+		})
+
 		revalidatePath('/dashboard/workers')
 		return { success: true, message: 'Worker added successfully!' }
 	}
@@ -230,6 +240,76 @@ export async function updateWorker(workerId: string, data: Record<string, unknow
 	return { success: true }
 }
 
+export async function respondToInvitation(invitationId: string, accept: boolean) {
+	if (!uuid.safeParse(invitationId).success) return { error: 'Invalid invitation ID' }
+
+	const { supabase, user } = await getAuthUser()
+	if (!user) return { error: 'Not authenticated' }
+
+	// Get user email
+	const { data: profile } = await supabase.from('profiles').select('email').eq('id', user.id).single()
+	if (!profile) return { error: 'Profile not found' }
+
+	// Verify invitation belongs to this user's email
+	const { data: invitation } = await supabase
+		.from('worker_invitations')
+		.select('id, business_id, display_name, bio, specialties, invited_by, status')
+		.eq('id', invitationId)
+		.eq('email', profile.email)
+		.single()
+
+	if (!invitation) return { error: 'Invitation not found' }
+	if (invitation.status !== 'pending') return { error: 'Invitation is no longer pending' }
+
+	if (accept) {
+		// Create worker record
+		const { error: workerError } = await supabase.from('workers').insert({
+			business_id: invitation.business_id,
+			user_id: user.id,
+			display_name: invitation.display_name,
+			bio: invitation.bio || null,
+			specialties: invitation.specialties,
+			is_active: true,
+		})
+		if (workerError) return { error: workerError.message }
+
+		// Update invitation
+		await supabase.from('worker_invitations').update({
+			status: 'accepted',
+			accepted_at: new Date().toISOString(),
+		}).eq('id', invitationId)
+
+		// Notify the business owner
+		const { data: biz } = await supabase.from('businesses').select('name').eq('id', invitation.business_id).single()
+		await supabase.from('notifications').insert({
+			user_id: invitation.invited_by,
+			type: 'worker_invitation',
+			title: 'Invitation accepted',
+			message: `${invitation.display_name} accepted the invitation to join ${biz?.name ?? 'your business'}`,
+			data: { business_id: invitation.business_id },
+		})
+	} else {
+		// Decline
+		await supabase.from('worker_invitations').update({
+			status: 'declined',
+		}).eq('id', invitationId)
+
+		// Notify the business owner
+		const { data: biz } = await supabase.from('businesses').select('name').eq('id', invitation.business_id).single()
+		await supabase.from('notifications').insert({
+			user_id: invitation.invited_by,
+			type: 'worker_invitation',
+			title: 'Invitation declined',
+			message: `${invitation.display_name} declined the invitation to join ${biz?.name ?? 'your business'}`,
+			data: { business_id: invitation.business_id },
+		})
+	}
+
+	revalidatePath('/dashboard')
+	revalidatePath('/dashboard/workers')
+	return { success: true }
+}
+
 export async function toggleWorkerActive(workerId: string, isActive: boolean) {
 	if (!uuid.safeParse(workerId).success) return { error: 'Invalid worker ID' }
 
@@ -261,6 +341,13 @@ export async function upsertWorkerAvailability(
 
 	const isOwner = await verifyWorkerOwnership(supabase, workerId, user.id)
 	if (!isOwner) return { error: 'Not authorized' }
+
+	// Validate time ranges
+	for (const a of availability) {
+		if (a.is_active && a.start_time >= a.end_time) {
+			return { error: `End time must be after start time for day ${a.day_of_week}` }
+		}
+	}
 
 	const rows = availability.map((a) => ({
 		worker_id: workerId,

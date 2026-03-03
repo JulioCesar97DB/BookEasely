@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
 import { type WorkerWithBusiness, typedQuery } from '@/lib/types'
 import { Briefcase, Calendar, Clock, Search, Store } from 'lucide-react'
+import { PendingInvitations } from './pending-invitations'
 import { QuickAction } from './quick-action'
 import { StatCard } from './stat-card'
 
@@ -26,6 +27,14 @@ export async function WorkerDashboard({ firstName, userId }: { firstName: string
 
 	const workerRecords = typedQuery<WorkerWithBusiness[]>(rawWorkerRecords ?? [])
 	const workerIds = workerRecords.map((w) => w.id)
+
+	// Get user email for invitation lookup
+	const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single()
+	const { data: pendingInvitations } = await supabase
+		.from('worker_invitations')
+		.select('id, business_id, display_name, businesses(name)')
+		.eq('email', profile?.email ?? '')
+		.eq('status', 'pending')
 
 	const { today, nextWeek } = getDateStrings()
 
@@ -76,6 +85,12 @@ export async function WorkerDashboard({ firstName, userId }: { firstName: string
 						/>
 					</AnimatedCard>
 				</div>
+
+				{(pendingInvitations ?? []).length > 0 && (
+				<AnimatedSection delay={0.12}>
+					<PendingInvitations invitations={typedQuery<{ id: string; business_id: string; display_name: string; businesses: { name: string } | null }[]>(pendingInvitations ?? [])} />
+				</AnimatedSection>
+			)}
 
 				<AnimatedSection delay={0.15}>
 					<h2 className="text-lg font-semibold mb-4">Quick Actions</h2>

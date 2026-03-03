@@ -1,5 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
@@ -16,12 +16,15 @@ import { useAuth } from '../../../lib/auth-context'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 
-export default function InviteWorkerScreen() {
+export default function AddWorkerScreen() {
 	const { user } = useAuth()
 	const router = useRouter()
-	const { businessId } = useLocalSearchParams<{ businessId: string }>()
+	const navigation = useNavigation()
+	const { businessId, id } = useLocalSearchParams<{ businessId: string; id?: string }>()
+	const isEditMode = !!id
 
 	const [saving, setSaving] = useState(false)
+	const [loadingWorker, setLoadingWorker] = useState(isEditMode)
 	const [form, setForm] = useState({
 		email: '',
 		display_name: '',
@@ -29,23 +32,77 @@ export default function InviteWorkerScreen() {
 		specialties: '',
 	})
 
-	async function handleInvite() {
-		if (!form.email.trim()) {
-			Alert.alert('Error', 'Email is required')
-			return
+	// Set header title based on mode
+	useEffect(() => {
+		navigation.setOptions({ title: isEditMode ? 'Edit Worker' : 'Add Worker' })
+	}, [isEditMode, navigation])
+
+	// Load existing worker data in edit mode
+	useEffect(() => {
+		if (!isEditMode || !id) return
+		async function loadWorker() {
+			const { data: worker } = await supabase
+				.from('workers')
+				.select('display_name, bio, specialties')
+				.eq('id', id)
+				.single()
+			if (worker) {
+				setForm({
+					email: '',
+					display_name: worker.display_name ?? '',
+					bio: worker.bio ?? '',
+					specialties: worker.specialties?.join(', ') ?? '',
+				})
+			}
+			setLoadingWorker(false)
 		}
+		loadWorker()
+	}, [id, isEditMode])
+
+	async function handleSave() {
 		if (!form.display_name.trim()) {
 			Alert.alert('Error', 'Display name is required')
 			return
 		}
 		if (!businessId || !user) return
 
-		setSaving(true)
-		const email = form.email.trim().toLowerCase()
 		const specialties = form.specialties
 			.split(',')
 			.map((s) => s.trim())
 			.filter(Boolean)
+
+		setSaving(true)
+
+		if (isEditMode) {
+			// Update existing worker
+			const { error } = await supabase
+				.from('workers')
+				.update({
+					display_name: form.display_name.trim(),
+					bio: form.bio.trim() || null,
+					specialties: specialties.length > 0 ? specialties : null,
+				})
+				.eq('id', id)
+
+			setSaving(false)
+			if (error) {
+				Alert.alert('Error', error.message)
+				return
+			}
+			Alert.alert('Success', 'Worker updated successfully!', [
+				{ text: 'OK', onPress: () => router.back() },
+			])
+			return
+		}
+
+		// Invite flow — email is required
+		if (!form.email.trim()) {
+			setSaving(false)
+			Alert.alert('Error', 'Email is required')
+			return
+		}
+
+		const email = form.email.trim().toLowerCase()
 
 		// Check if already invited
 		const { data: existingInvite } = await supabase
@@ -117,6 +174,16 @@ export default function InviteWorkerScreen() {
 				accepted_at: new Date().toISOString(),
 			})
 
+			// Notify the worker they've been added
+			const { data: biz } = await supabase.from('businesses').select('name').eq('id', businessId).single()
+			await supabase.from('notifications').insert({
+				user_id: existingProfile.id,
+				type: 'worker_added',
+				title: 'Added to team',
+				message: `You were added as a worker at ${biz?.name ?? 'a business'}`,
+				data: { business_id: businessId },
+			})
+
 			setSaving(false)
 			Alert.alert('Success', 'Worker added successfully!', [
 				{ text: 'OK', onPress: () => router.back() },
@@ -147,6 +214,14 @@ export default function InviteWorkerScreen() {
 		}
 	}
 
+	if (loadingWorker) {
+		return (
+			<View style={styles.loadingContainer}>
+				<ActivityIndicator size="large" color={colors.primary} />
+			</View>
+		)
+	}
+
 	return (
 		<KeyboardAvoidingView
 			style={styles.container}
@@ -157,22 +232,24 @@ export default function InviteWorkerScreen() {
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
 			>
-				<View style={styles.field}>
-					<Text style={styles.label}>Email</Text>
-					<TextInput
-						style={styles.input}
-						value={form.email}
-						onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
-						placeholder="worker@example.com"
-						placeholderTextColor={colors.foregroundSecondary}
-						keyboardType="email-address"
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					<Text style={styles.hint}>
-						If they have an account, they'll be added instantly. Otherwise, they'll be linked when they sign up.
-					</Text>
-				</View>
+				{!isEditMode && (
+					<View style={styles.field}>
+						<Text style={styles.label}>Email</Text>
+						<TextInput
+							style={styles.input}
+							value={form.email}
+							onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
+							placeholder="worker@example.com"
+							placeholderTextColor={colors.foregroundSecondary}
+							keyboardType="email-address"
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						<Text style={styles.hint}>
+							If they have an account, they'll be added instantly. Otherwise, they'll be linked when they sign up.
+						</Text>
+					</View>
+				)}
 
 				<View style={styles.field}>
 					<Text style={styles.label}>Display name</Text>
@@ -213,14 +290,16 @@ export default function InviteWorkerScreen() {
 
 				<TouchableOpacity
 					style={[styles.button, saving && styles.buttonDisabled]}
-					onPress={handleInvite}
+					onPress={handleSave}
 					disabled={saving}
 					activeOpacity={0.8}
 				>
 					{saving ? (
 						<ActivityIndicator color={colors.white} size="small" />
 					) : (
-						<Text style={styles.buttonText}>Send Invitation</Text>
+						<Text style={styles.buttonText}>
+							{isEditMode ? 'Save Changes' : 'Send Invitation'}
+						</Text>
 					)}
 				</TouchableOpacity>
 			</ScrollView>
@@ -230,6 +309,7 @@ export default function InviteWorkerScreen() {
 
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: colors.background },
+	loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
 	scroll: { padding: spacing['2xl'], paddingBottom: spacing['5xl'] },
 	field: { gap: spacing.sm, marginBottom: spacing.lg },
 	label: { fontSize: fontSize.sm, fontWeight: '500', color: colors.foreground },

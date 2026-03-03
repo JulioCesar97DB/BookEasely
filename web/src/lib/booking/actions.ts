@@ -198,6 +198,16 @@ export async function createBooking(input: {
 	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
 
+	// Prevent booking with yourself as the worker
+	const { data: selectedWorker } = await supabase
+		.from('workers')
+		.select('user_id')
+		.eq('id', workerId)
+		.single()
+	if (selectedWorker?.user_id === user.id) {
+		return { error: 'You cannot book an appointment with yourself' }
+	}
+
 	const { slots } = await getAvailableSlots({ businessId, serviceId, workerId, date })
 	const slotAvailable = slots.some((s) => s.start === startTime && s.end === endTime)
 	if (!slotAvailable) {
