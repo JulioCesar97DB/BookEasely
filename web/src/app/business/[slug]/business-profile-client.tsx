@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DAYS_FULL, DAYS_SHORT } from '@/lib/constants'
 import type {
 	BusinessHours,
 	BusinessWithCategory,
@@ -47,8 +48,6 @@ interface BusinessProfileClientProps {
 	isAuthenticated: boolean
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function formatTime(time: string) {
 	const [h, m] = time.split(':').map(Number)
@@ -670,7 +669,7 @@ function HoursTab({
 							Business Hours
 						</h3>
 						<div className="space-y-1">
-							{DAYS.map((day, i) => {
+							{DAYS_FULL.map((day, i) => {
 								const dayHours = hours.find((h) => h.day_of_week === i)
 								const isToday = i === today
 								return (
@@ -686,7 +685,7 @@ function HoursTab({
 												<span className="h-1.5 w-1.5 rounded-full bg-primary" />
 											)}
 											<span className={cn(!isToday && 'ml-3.5')}>
-												{SHORT_DAYS[i]}
+												{DAYS_SHORT[i]}
 											</span>
 										</span>
 										<span

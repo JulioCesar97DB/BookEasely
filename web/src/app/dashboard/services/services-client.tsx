@@ -27,6 +27,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { DURATION_OPTIONS } from '@/lib/constants'
 import type { Service, ServiceWorker, Worker } from '@/lib/types'
 import { motion } from 'framer-motion'
 import { ClipboardList, Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
@@ -41,16 +42,6 @@ interface Props {
 	serviceWorkers: Pick<ServiceWorker, 'service_id' | 'worker_id'>[]
 }
 
-const DURATIONS = [
-	{ value: 15, label: '15 min' },
-	{ value: 30, label: '30 min' },
-	{ value: 45, label: '45 min' },
-	{ value: 60, label: '1 hour' },
-	{ value: 90, label: '1h 30min' },
-	{ value: 120, label: '2 hours' },
-	{ value: 180, label: '3 hours' },
-	{ value: 240, label: '4 hours' },
-]
 
 interface FormState {
 	name: string
@@ -352,7 +343,7 @@ export function ServicesClient({ businessId, services, workers, serviceWorkers }
 											<SelectValue />
 										</SelectTrigger>
 										<SelectContent>
-											{DURATIONS.map((d) => (
+											{DURATION_OPTIONS.map((d) => (
 												<SelectItem key={d.value} value={d.value.toString()}>
 													{d.label}
 												</SelectItem>

@@ -3,21 +3,13 @@
 import { PageTransition } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { DAYS_SHORT, SCHEDULE_CHART_COLORS, SCHEDULE_HOURS } from '@/lib/constants'
 import type { BusinessHours, Worker, WorkerAvailability, WorkerBlockedDate } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const HOURS = Array.from({ length: 11 }, (_, i) => i + 7) // 7am - 5pm
-const CHART_COLORS = [
-	{ bg: 'bg-chart-1', text: 'text-chart-1' },
-	{ bg: 'bg-chart-2', text: 'text-chart-2' },
-	{ bg: 'bg-chart-3', text: 'text-chart-3' },
-	{ bg: 'bg-chart-4', text: 'text-chart-4' },
-	{ bg: 'bg-chart-5', text: 'text-chart-5' },
-]
 
 interface Props {
 	businessHours: BusinessHours[]
@@ -78,8 +70,8 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 	const endDate = weekDates[6]
 
 	// Grid range in minutes (7am = 420, 6pm = 1080)
-	const gridStart = HOURS[0]! * 60
-	const gridEnd = (HOURS[HOURS.length - 1]! + 1) * 60
+	const gridStart = SCHEDULE_HOURS[0]! * 60
+	const gridEnd = (SCHEDULE_HOURS[SCHEDULE_HOURS.length - 1]! + 1) * 60
 
 	return (
 		<PageTransition>
@@ -131,7 +123,7 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 								<span
 									className={cn(
 										'h-2.5 w-2.5 rounded-full',
-										CHART_COLORS[index % CHART_COLORS.length]?.bg
+										SCHEDULE_CHART_COLORS[index % SCHEDULE_CHART_COLORS.length]?.bg
 									)}
 								/>
 								{worker.display_name}
@@ -164,7 +156,7 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 														isToday && 'bg-primary/5'
 													)}
 												>
-													<p className="text-xs font-medium text-muted-foreground">{DAYS[date.getDay()]}</p>
+													<p className="text-xs font-medium text-muted-foreground">{DAYS_SHORT[date.getDay()]}</p>
 													<p className={cn(
 														'text-sm font-bold',
 														isToday && 'text-primary'
@@ -177,7 +169,7 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 									</div>
 
 									{/* Time rows */}
-									{HOURS.map((hour) => {
+									{SCHEDULE_HOURS.map((hour) => {
 										return (
 											<div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b last:border-b-0 h-12">
 												<div className="p-1 text-right pr-2 flex items-start justify-end">
@@ -225,11 +217,11 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 																// Only render in the first hour that overlaps
 																if (hourStart !== Math.max(availStart, Math.floor(availStart / 60) * 60)) return null
 
-																const topPx = ((availStart - gridStart) / (gridEnd - gridStart)) * (HOURS.length * 48)
-																const heightPx = ((availEnd - availStart) / (gridEnd - gridStart)) * (HOURS.length * 48)
+																const topPx = ((availStart - gridStart) / (gridEnd - gridStart)) * (SCHEDULE_HOURS.length * 48)
+																const heightPx = ((availEnd - availStart) / (gridEnd - gridStart)) * (SCHEDULE_HOURS.length * 48)
 
 																// Calculate position relative to the grid
-																const rowStartPx = ((hour * 60 - gridStart) / (gridEnd - gridStart)) * (HOURS.length * 48)
+																const rowStartPx = ((hour * 60 - gridStart) / (gridEnd - gridStart)) * (SCHEDULE_HOURS.length * 48)
 
 																return (
 																	<div
@@ -238,7 +230,7 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 																			'absolute rounded-sm text-[9px] font-medium px-1 py-0.5 overflow-hidden z-10',
 																			isBlocked
 																				? 'bg-destructive/20 text-destructive line-through border border-destructive/30'
-																				: `${CHART_COLORS[wIndex % CHART_COLORS.length]?.bg} text-primary-foreground opacity-80`
+																				: `${SCHEDULE_CHART_COLORS[wIndex % SCHEDULE_CHART_COLORS.length]?.bg} text-primary-foreground opacity-80`
 																		)}
 																		style={{
 																			top: topPx - rowStartPx,

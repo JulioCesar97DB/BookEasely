@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { DAYS_FULL } from '@/lib/constants'
 import type { ServiceWorker, Worker, WorkerAvailability, WorkerBlockedDate, WorkerInvitation } from '@/lib/types'
 import { motion } from 'framer-motion'
 import { CalendarOff, ChevronDown, ChevronUp, ClipboardList, Clock, Loader2, Mail, Plus, Trash2, UserPlus, Users, X } from 'lucide-react'
@@ -16,7 +17,6 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { addBlockedDate, addSelfAsWorker, cancelInvitation, inviteWorker, removeBlockedDate, updateWorker, upsertWorkerAvailability } from './actions'
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 interface Props {
 	businessId: string
@@ -551,7 +551,7 @@ function AvailabilitySection({
 }) {
 	const [saving, setSaving] = useState(false)
 	const [schedule, setSchedule] = useState(() =>
-		DAYS.map((_, i) => {
+		DAYS_FULL.map((_, i) => {
 			const existing = availability.find((a) => a.day_of_week === i)
 			return {
 				day_of_week: i,
@@ -589,7 +589,7 @@ function AvailabilitySection({
 						key={day.day_of_week}
 						className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm"
 					>
-						<div className="w-16 font-medium text-xs">{DAYS[index]?.slice(0, 3)}</div>
+						<div className="w-16 font-medium text-xs">{DAYS_FULL[index]?.slice(0, 3)}</div>
 						<Switch
 							checked={day.is_active}
 							onCheckedChange={(checked) => updateDay(index, 'is_active', checked)}

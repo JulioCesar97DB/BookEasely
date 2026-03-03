@@ -1,6 +1,7 @@
 import { PageTransition } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { BOOKING_STATUS_COLORS } from '@/lib/constants'
 import { getAuthUser, getIsWorker } from '@/lib/supabase/auth-cache'
 import { createClient } from '@/lib/supabase/server'
 import { Calendar, Clock } from 'lucide-react'
@@ -24,13 +25,6 @@ interface BookingRow {
 	reviews: { id: string }[]
 }
 
-const STATUS_COLORS: Record<string, string> = {
-	pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-	confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-	completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-	cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-	no_show: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-}
 
 export default async function BookingsPage() {
 	const [user, isWorker] = await Promise.all([getAuthUser(), getIsWorker()])
@@ -195,7 +189,7 @@ function BookingCard({
 						canReschedule={canReschedule}
 						canReview={canReview}
 					/>
-					<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[booking.status] ?? ''}`}>
+					<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${BOOKING_STATUS_COLORS[booking.status] ?? ''}`}>
 						{booking.status}
 					</span>
 				</div>

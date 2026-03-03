@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { DAYS_FULL } from '@/lib/constants'
 import type { Business, BusinessHours, Category } from '@/lib/types'
 import { businessProfileSchema, type BusinessProfileInput } from '@/lib/validations/business'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,7 +21,6 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { updateBusinessHours, updateBusinessProfile, updateBusinessSettings } from './actions'
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 interface Props {
 	business: Business
@@ -310,7 +310,7 @@ function HoursTab({ businessId, initialHours }: { businessId: string; initialHou
 		close_time: string
 		is_closed: boolean
 	}>>(() =>
-		DAYS.map((_, i) => {
+		DAYS_FULL.map((_, i) => {
 			const existing = initialHours.find((h) => h.day_of_week === i)
 			return {
 				day_of_week: i,
@@ -372,7 +372,7 @@ function HoursTab({ businessId, initialHours }: { businessId: string; initialHou
 							key={hour.day_of_week}
 							className="flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
 						>
-							<div className="w-28 font-medium text-sm">{DAYS[index]}</div>
+							<div className="w-28 font-medium text-sm">{DAYS_FULL[index]}</div>
 							<div className="flex items-center gap-2">
 								<Switch
 									checked={!hour.is_closed}

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { DAYS_FULL } from '@/lib/constants'
 import type { WorkerAvailability, WorkerBlockedDate } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { CalendarOff, Loader2, Plus, Save, Trash2, X } from 'lucide-react'
@@ -14,7 +15,6 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { addBlockedDate, removeBlockedDate, upsertWorkerAvailability } from '../workers/actions'
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 interface WorkerInfo {
 	id: string
@@ -37,7 +37,7 @@ interface AvailEntry {
 }
 
 function buildAvail(data: WorkerAvailability[]): AvailEntry[] {
-	return DAYS.map((_, i) => {
+	return DAYS_FULL.map((_, i) => {
 		const existing = data.find((a) => a.day_of_week === i)
 		return {
 			day_of_week: i,
@@ -185,7 +185,7 @@ export function MyScheduleClient({ workers, availability, blockedDates }: Props)
 								)}
 							>
 								<div className="w-28 shrink-0">
-									<p className="text-sm font-medium">{DAYS[idx]}</p>
+									<p className="text-sm font-medium">{DAYS_FULL[idx]}</p>
 								</div>
 								<Switch
 									checked={entry.is_active}
