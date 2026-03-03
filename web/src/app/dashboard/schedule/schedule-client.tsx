@@ -4,6 +4,7 @@ import { PageTransition } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { DAYS_SHORT, SCHEDULE_CHART_COLORS, SCHEDULE_HOURS } from '@/lib/constants'
+import { formatDateStr, formatHour, timeToMinutes } from '@/lib/format'
 import type { BusinessHours, Worker, WorkerAvailability, WorkerBlockedDate } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -30,21 +31,6 @@ function getWeekDates(offset: number): Date[] {
 	})
 }
 
-function timeToMinutes(time: string): number {
-	const [h, m] = time.split(':').map(Number)
-	return (h ?? 0) * 60 + (m ?? 0)
-}
-
-function formatDate(date: Date): string {
-	return date.toISOString().split('T')[0] ?? ''
-}
-
-function formatHour(hour: number): string {
-	if (hour === 0) return '12 AM'
-	if (hour < 12) return `${hour} AM`
-	if (hour === 12) return '12 PM'
-	return `${hour - 12} PM`
-}
 
 export function ScheduleClient({ businessHours, workers, availability, blockedDates }: Props) {
 	const [weekOffset, setWeekOffset] = useState(0)
@@ -147,10 +133,10 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 									<div className="grid grid-cols-[60px_repeat(7,1fr)] border-b">
 										<div className="p-2" />
 										{weekDates.map((date) => {
-											const isToday = formatDate(date) === formatDate(new Date())
+											const isToday = formatDateStr(date) === formatDateStr(new Date())
 											return (
 												<div
-													key={formatDate(date)}
+													key={formatDateStr(date)}
 													className={cn(
 														'p-2 text-center border-l',
 														isToday && 'bg-primary/5'
@@ -177,8 +163,8 @@ export function ScheduleClient({ businessHours, workers, availability, blockedDa
 												</div>
 												{weekDates.map((date, dayIndex) => {
 													const dayOfWeek = date.getDay()
-													const isToday = formatDate(date) === formatDate(new Date())
-													const dateStr = formatDate(date)
+													const isToday = formatDateStr(date) === formatDateStr(new Date())
+													const dateStr = formatDateStr(date)
 													const bizHours = businessHours.find((h) => h.day_of_week === dayOfWeek)
 													const isClosed = !bizHours || bizHours.is_closed
 

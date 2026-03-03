@@ -22,22 +22,7 @@ interface BlockedDate {
 	end_time: string | null
 }
 
-/**
- * Convert "HH:MM" or "HH:MM:SS" to minutes since midnight
- */
-function timeToMinutes(time: string): number {
-	const parts = time.split(':')
-	return Number(parts[0]) * 60 + Number(parts[1])
-}
-
-/**
- * Convert minutes since midnight to "HH:MM" format
- */
-function minutesToTime(minutes: number): string {
-	const h = Math.floor(minutes / 60)
-	const m = minutes % 60
-	return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
-}
+import { minutesToTime, timeToMinutes } from '@/lib/format'
 
 /**
  * Generate available time slots for a specific worker on a specific date.

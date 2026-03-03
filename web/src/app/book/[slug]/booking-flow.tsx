@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { createBooking, getAvailableSlots, getAvailableSlotsAnyWorker } from '@/lib/booking/actions'
 import type { TimeSlot } from '@/lib/booking/time-slots'
+import { formatDuration, formatTime, getInitials } from '@/lib/format'
 import type { BusinessWithCategory, Service, Worker } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import {
@@ -34,23 +35,6 @@ interface BookingFlowProps {
 	serviceWorkers: { service_id: string; worker_id: string }[]
 }
 
-function formatDuration(minutes: number) {
-	if (minutes < 60) return `${minutes}min`
-	const h = Math.floor(minutes / 60)
-	const m = minutes % 60
-	return m > 0 ? `${h}h ${m}min` : `${h}h`
-}
-
-function formatTime(time: string) {
-	const [h, m] = time.split(':').map(Number)
-	const ampm = h >= 12 ? 'PM' : 'AM'
-	const hour = h % 12 || 12
-	return m === 0 ? `${hour}:00 ${ampm}` : `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
-}
-
-function getInitials(name: string) {
-	return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-}
 
 export function BookingFlow({ business, services, workers, serviceWorkers }: BookingFlowProps) {
 	const [step, setStep] = useState<Step>('service')

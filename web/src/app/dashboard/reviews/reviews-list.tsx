@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { respondToReview } from '@/lib/booking/actions'
+import { getInitials } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Loader2, MessageSquare, Star, User } from 'lucide-react'
 import { useState, useTransition } from 'react'
@@ -19,9 +20,6 @@ interface ReviewWithProfile {
 	profiles: { full_name: string; avatar_url: string | null } | null
 }
 
-function getInitials(name: string) {
-	return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-}
 
 export function ReviewsList({
 	reviews,

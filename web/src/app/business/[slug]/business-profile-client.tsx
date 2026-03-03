@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DAYS_FULL, DAYS_SHORT } from '@/lib/constants'
+import { formatDuration, formatTime, getInitials, isOpenNow } from '@/lib/format'
 import type {
 	BusinessHours,
 	BusinessWithCategory,
@@ -49,38 +50,6 @@ interface BusinessProfileClientProps {
 }
 
 
-function formatTime(time: string) {
-	const [h, m] = time.split(':').map(Number)
-	const ampm = h >= 12 ? 'PM' : 'AM'
-	const hour = h % 12 || 12
-	return m === 0 ? `${hour} ${ampm}` : `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
-}
-
-function formatDuration(minutes: number) {
-	if (minutes < 60) return `${minutes}min`
-	const h = Math.floor(minutes / 60)
-	const m = minutes % 60
-	return m > 0 ? `${h}h ${m}min` : `${h}h`
-}
-
-function getInitials(name: string) {
-	return name
-		.split(' ')
-		.map((n) => n[0])
-		.join('')
-		.toUpperCase()
-		.slice(0, 2)
-}
-
-function isOpenNow(hours: BusinessHours[]) {
-	const now = new Date()
-	const today = now.getDay()
-	const todayHours = hours.find((h) => h.day_of_week === today)
-	if (!todayHours || todayHours.is_closed) return false
-
-	const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-	return currentTime >= todayHours.open_time && currentTime < todayHours.close_time
-}
 
 export function BusinessProfileClient({
 	business,
