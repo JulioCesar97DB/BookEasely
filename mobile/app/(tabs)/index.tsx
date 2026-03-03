@@ -117,7 +117,7 @@ export default function DiscoverScreen() {
 	const renderBusinessCard = useCallback(({ item, index }: { item: BusinessWithCategory; index: number }) => {
 		const isLeft = index % 2 === 0
 		return (
-			<View style={{ marginLeft: isLeft ? gridPadding : gridGap / 2, marginRight: isLeft ? gridGap / 2 : gridPadding, marginBottom: gridGap }}>
+			<View style={{ flex: 1, marginLeft: isLeft ? gridPadding : gridGap / 2, marginRight: isLeft ? gridGap / 2 : gridPadding, marginBottom: gridGap }}>
 				<BusinessCard business={item} width={cardWidth} />
 			</View>
 		)
@@ -416,6 +416,7 @@ const styles = StyleSheet.create({
 	popularScroll: {
 		paddingHorizontal: spacing['2xl'],
 		gap: spacing.md,
+		alignItems: 'stretch',
 	},
 	resultsRow: {
 		paddingHorizontal: spacing['2xl'],

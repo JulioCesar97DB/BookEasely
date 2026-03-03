@@ -16,7 +16,7 @@ export function BusinessCard({ business, width }: BusinessCardProps) {
 
 	return (
 		<TouchableOpacity
-			style={[styles.card, { width }]}
+			style={[styles.card, { width, flex: 1 }]}
 			activeOpacity={0.85}
 			onPress={() => router.push(`/business/${business.slug}`)}
 		>
@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
 		overflow: 'hidden',
 	},
 	info: {
+		flex: 1,
 		padding: spacing.md,
 		gap: 4,
 	},

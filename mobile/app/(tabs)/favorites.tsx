@@ -90,7 +90,7 @@ export default function FavoritesScreen() {
 						renderItem={({ item, index }) => {
 							const isLeft = index % 2 === 0
 							return (
-								<View style={{ marginLeft: isLeft ? gridPadding : gridGap / 2, marginRight: isLeft ? gridGap / 2 : gridPadding, marginBottom: gridGap }}>
+								<View style={{ flex: 1, marginLeft: isLeft ? gridPadding : gridGap / 2, marginRight: isLeft ? gridGap / 2 : gridPadding, marginBottom: gridGap }}>
 									<BusinessCard business={item} width={cardWidth} />
 								</View>
 							)
