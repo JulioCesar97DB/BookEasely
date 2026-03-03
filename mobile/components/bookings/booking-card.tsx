@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { formatTime } from '../../lib/booking'
 import { BOOKING_STATUS_COLORS } from '../../lib/constants'
@@ -24,17 +25,18 @@ interface BookingCardProps {
 	onReschedule: (item: BookingItem) => void
 }
 
-export function BookingCard({ item, today, onCancel, onReschedule }: BookingCardProps) {
+export const BookingCard = React.memo(function BookingCard({ item, today, onCancel, onReschedule }: BookingCardProps) {
 	const isPast = item.date < today || item.status === 'cancelled'
 	const canCancel = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
 	const canReschedule = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
 	const statusColor = BOOKING_STATUS_COLORS[item.status] ?? { bg: '#F3F4F6', text: '#374151' }
+	const dateObj = useMemo(() => new Date(item.date + 'T00:00:00'), [item.date])
 
 	return (
 		<View style={[styles.bookingCard, isPast && styles.bookingCardPast]}>
 			<View style={styles.dateBox}>
-				<Text style={styles.dateMonth}>{new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })}</Text>
-				<Text style={styles.dateDay}>{new Date(item.date + 'T00:00:00').getDate()}</Text>
+				<Text style={styles.dateMonth}>{dateObj.toLocaleDateString('en-US', { month: 'short' })}</Text>
+				<Text style={styles.dateDay}>{dateObj.getDate()}</Text>
 			</View>
 			<View style={styles.bookingInfo}>
 				<Text style={styles.bookingBusiness}>{item.businesses?.name ?? 'Business'}</Text>
@@ -62,7 +64,7 @@ export function BookingCard({ item, today, onCancel, onReschedule }: BookingCard
 			</View>
 		</View>
 	)
-}
+})
 
 const styles = StyleSheet.create({
 	bookingCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.sm },

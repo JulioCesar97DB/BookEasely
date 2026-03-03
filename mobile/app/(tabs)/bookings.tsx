@@ -136,14 +136,16 @@ export default function BookingsScreen() {
 		}
 	}, [rescheduleBookingItem, rescheduleDate, rescheduleSelectedSlot, fetchBookings, handleRescheduleClose])
 
-	const today = new Date().toISOString().split('T')[0]!
-	const upcoming = bookings.filter((b) => b.date >= today && b.status !== 'cancelled')
-	const past = bookings.filter((b) => b.date < today || b.status === 'cancelled')
+	const today = useMemo(() => new Date().toISOString().split('T')[0]!, [])
 
-	const sections = [
-		...(upcoming.length > 0 ? [{ title: 'Upcoming', data: upcoming }] : []),
-		...(past.length > 0 ? [{ title: 'Past', data: past }] : []),
-	]
+	const sections = useMemo(() => {
+		const upcoming = bookings.filter((b) => b.date >= today && b.status !== 'cancelled')
+		const past = bookings.filter((b) => b.date < today || b.status === 'cancelled')
+		return [
+			...(upcoming.length > 0 ? [{ title: 'Upcoming', data: upcoming }] : []),
+			...(past.length > 0 ? [{ title: 'Past', data: past }] : []),
+		]
+	}, [bookings, today])
 
 	if (!user) {
 		return (

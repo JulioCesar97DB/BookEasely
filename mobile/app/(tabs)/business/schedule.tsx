@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
 	ScrollView,
@@ -47,7 +47,7 @@ export default function ScheduleScreen() {
 	const [visibleWorkers, setVisibleWorkers] = useState<Set<string>>(new Set())
 
 	const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset])
-	const todayStr = formatDateStr(new Date())
+	const todayStr = useMemo(() => formatDateStr(new Date()), [])
 
 	useEffect(() => {
 		if (!user) return
@@ -90,18 +90,58 @@ export default function ScheduleScreen() {
 		load()
 	}, [user])
 
-	function toggleWorker(id: string) {
+	const toggleWorker = useCallback((id: string) => {
 		setVisibleWorkers((prev) => {
 			const next = new Set(prev)
 			if (next.has(id)) next.delete(id)
 			else next.add(id)
 			return next
 		})
-	}
+	}, [])
 
 	const gridStart = HOURS[0]! * 60
 	const gridEnd = (HOURS[HOURS.length - 1]! + 1) * 60
-	const visibleWorkersList = workers.filter((w) => visibleWorkers.has(w.id))
+	const visibleWorkersList = useMemo(() => workers.filter((w) => visibleWorkers.has(w.id)), [workers, visibleWorkers])
+
+	// Pre-compute lookup maps for O(1) access in the grid (avoids .find() in tight render loops)
+	const businessHoursMap = useMemo(() => {
+		const map = new Map<number, BusinessHours>()
+		for (const bh of businessHours) map.set(bh.day_of_week, bh)
+		return map
+	}, [businessHours])
+
+	const availabilityMap = useMemo(() => {
+		const map = new Map<string, WorkerAvailability>()
+		for (const a of availability) {
+			if (a.is_active) map.set(`${a.worker_id}-${a.day_of_week}`, a)
+		}
+		return map
+	}, [availability])
+
+	const blockedDatesSet = useMemo(() => {
+		const set = new Set<string>()
+		for (const b of blockedDates) set.add(`${b.worker_id}-${b.date}`)
+		return set
+	}, [blockedDates])
+
+	// Pre-compute per-date values used across all hour rows
+	const weekDateInfo = useMemo(() => weekDates.map((date) => {
+		const dayOfWeek = date.getDay()
+		const dateStr = formatDateStr(date)
+		const isToday = dateStr === todayStr
+		const bh = businessHoursMap.get(dayOfWeek)
+		const isClosed = !bh || bh.is_closed
+		const bizOpen = bh && !bh.is_closed ? timeToMinutes(bh.open_time) : 0
+		const bizClose = bh && !bh.is_closed ? timeToMinutes(bh.close_time) : 0
+		return { date, dayOfWeek, dateStr, isToday, isClosed, bizOpen, bizClose }
+	}), [weekDates, todayStr, businessHoursMap])
+
+	// Worker index map for stable color assignment
+	const workerIndexMap = useMemo(() => {
+		const map = new Map<string, number>()
+		workers.forEach((w, i) => map.set(w.id, i))
+		return map
+	}, [workers])
 
 	if (loading) {
 		return (
@@ -170,95 +210,83 @@ export default function ScheduleScreen() {
 						{/* Day headers */}
 						<View style={styles.headerRow}>
 							<View style={styles.timeCol} />
-							{weekDates.map((date) => {
-								const isToday = formatDateStr(date) === todayStr
-								return (
-									<View key={formatDateStr(date)} style={[styles.dayCol, isToday && styles.dayColToday]}>
-										<Text style={styles.dayLabel}>{DAYS_SHORT[date.getDay()]}</Text>
-										<Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>{date.getDate()}</Text>
-									</View>
-								)
-							})}
+							{weekDateInfo.map((info) => (
+								<View key={info.dateStr} style={[styles.dayCol, info.isToday && styles.dayColToday]}>
+									<Text style={styles.dayLabel}>{DAYS_SHORT[info.dayOfWeek]}</Text>
+									<Text style={[styles.dayNumber, info.isToday && styles.dayNumberToday]}>{info.date.getDate()}</Text>
+								</View>
+							))}
 						</View>
 
 						{/* Time rows */}
-						{HOURS.map((hour) => (
-							<View key={hour} style={styles.row}>
-								<View style={styles.timeCol}>
-									<Text style={styles.timeLabel}>{formatHour(hour)}</Text>
+						{HOURS.map((hour) => {
+							const hourStart = hour * 60
+							const hourEnd = (hour + 1) * 60
+							const gridTotal = HOURS.length * ROW_HEIGHT
+							const gridRange = gridEnd - gridStart
+
+							return (
+								<View key={hour} style={styles.row}>
+									<View style={styles.timeCol}>
+										<Text style={styles.timeLabel}>{formatHour(hour)}</Text>
+									</View>
+									{weekDateInfo.map((info, dayIdx) => {
+										const isInBizHours = !info.isClosed && hourStart >= info.bizOpen && hourEnd <= info.bizClose
+
+										return (
+											<View
+												key={dayIdx}
+												style={[
+													styles.cell,
+													info.isToday && styles.cellToday,
+													isInBizHours && styles.cellBizHours,
+												]}
+											>
+												{visibleWorkersList.map((worker, wIdx) => {
+													const wa = availabilityMap.get(`${worker.id}-${info.dayOfWeek}`)
+													if (!wa) return null
+
+													const availStart = timeToMinutes(wa.start_time)
+													const availEnd = timeToMinutes(wa.end_time)
+													if (hour !== Math.floor(availStart / 60)) return null
+
+													const isBlocked = blockedDatesSet.has(`${worker.id}-${info.dateStr}`)
+													const topPx = ((availStart - gridStart) / gridRange) * gridTotal
+													const heightPx = ((availEnd - availStart) / gridRange) * gridTotal
+													const rowStartPx = ((hourStart - gridStart) / gridRange) * gridTotal
+													const color = CHART_COLORS[(workerIndexMap.get(worker.id) ?? 0) % CHART_COLORS.length]!
+
+													return (
+														<View
+															key={worker.id}
+															style={[
+																styles.block,
+																{
+																	top: topPx - rowStartPx,
+																	height: Math.min(heightPx, 300),
+																	left: (wIdx / visibleWorkersList.length) * CELL_WIDTH,
+																	width: CELL_WIDTH / visibleWorkersList.length,
+																	backgroundColor: isBlocked ? '#FEE2E2' : color + '30',
+																	borderLeftColor: isBlocked ? '#EF4444' : color,
+																},
+															]}
+														>
+															{isBlocked ? (
+																<Text style={styles.blockedText} numberOfLines={1}>Off</Text>
+															) : (
+																<Text style={[styles.blockText, { color }]} numberOfLines={1}>
+																	{worker.display_name.split(' ')[0]}
+																</Text>
+															)}
+														</View>
+													)
+												})}
+											</View>
+										)
+									})}
 								</View>
-								{weekDates.map((date, dayIdx) => {
-									const dayOfWeek = date.getDay()
-									const isToday = formatDateStr(date) === todayStr
-									const dateStr = formatDateStr(date)
-									const bh = businessHours.find((h) => h.day_of_week === dayOfWeek)
-									const isClosed = !bh || bh.is_closed
-									const bizOpen = bh && !bh.is_closed ? timeToMinutes(bh.open_time) : 0
-									const bizClose = bh && !bh.is_closed ? timeToMinutes(bh.close_time) : 0
-									const hourStart = hour * 60
-									const hourEnd = (hour + 1) * 60
-									const isInBizHours = !isClosed && hourStart >= bizOpen && hourEnd <= bizClose
-
-									return (
-										<View
-											key={dayIdx}
-											style={[
-												styles.cell,
-												isToday && styles.cellToday,
-												isInBizHours && styles.cellBizHours,
-											]}
-										>
-											{visibleWorkersList.map((worker, wIdx) => {
-												const wa = availability.find(
-													(a) => a.worker_id === worker.id && a.day_of_week === dayOfWeek && a.is_active
-												)
-												if (!wa) return null
-
-												const availStart = timeToMinutes(wa.start_time)
-												const availEnd = timeToMinutes(wa.end_time)
-												const firstHour = Math.floor(availStart / 60)
-												if (hour !== firstHour) return null
-
-												const isBlocked = blockedDates.some(
-													(b) => b.worker_id === worker.id && b.date === dateStr
-												)
-
-												const topPx = ((availStart - gridStart) / (gridEnd - gridStart)) * (HOURS.length * ROW_HEIGHT)
-												const heightPx = ((availEnd - availStart) / (gridEnd - gridStart)) * (HOURS.length * ROW_HEIGHT)
-												const rowStartPx = ((hour * 60 - gridStart) / (gridEnd - gridStart)) * (HOURS.length * ROW_HEIGHT)
-												const color = CHART_COLORS[workers.indexOf(worker) % CHART_COLORS.length]!
-
-												return (
-													<View
-														key={worker.id}
-														style={[
-															styles.block,
-															{
-																top: topPx - rowStartPx,
-																height: Math.min(heightPx, 300),
-																left: (wIdx / visibleWorkersList.length) * CELL_WIDTH,
-																width: CELL_WIDTH / visibleWorkersList.length,
-																backgroundColor: isBlocked ? '#FEE2E2' : color + '30',
-																borderLeftColor: isBlocked ? '#EF4444' : color,
-															},
-														]}
-													>
-														{!isBlocked && (
-															<Text style={[styles.blockText, { color }]} numberOfLines={1}>
-																{worker.display_name.split(' ')[0]}
-															</Text>
-														)}
-														{isBlocked && (
-															<Text style={styles.blockedText} numberOfLines={1}>Off</Text>
-														)}
-													</View>
-												)
-											})}
-										</View>
-									)
-								})}
-							</View>
-						))}
+							)
+						})}
 					</View>
 				</ScrollView>
 			</ScrollView>

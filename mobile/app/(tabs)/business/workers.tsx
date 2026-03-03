@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
@@ -43,7 +43,7 @@ export default function WorkersScreen() {
 	const [serviceCounts, setServiceCounts] = useState<Record<string, number>>({})
 	const [loading, setLoading] = useState(true)
 	const [businessId, setBusinessId] = useState<string | null>(null)
-	const ownerIsWorker = workers.some((w) => w.user_id === user?.id)
+	const ownerIsWorker = useMemo(() => workers.some((w) => w.user_id === user?.id), [workers, user?.id])
 
 	const loadData = useCallback(async () => {
 		if (!user) return
@@ -117,12 +117,12 @@ export default function WorkersScreen() {
 		)
 	}
 
-	const sections = [
+	const sections = useMemo(() => [
 		...(workers.length > 0 ? [{ type: 'header' as const }] : []),
 		...workers.map((w) => ({ type: 'worker' as const, data: w })),
 		...(invitations.length > 0 ? [{ type: 'invitations-header' as const }] : []),
 		...invitations.map((inv) => ({ type: 'invitation' as const, data: inv })),
-	]
+	], [workers, invitations])
 
 	return (
 		<View style={styles.container}>

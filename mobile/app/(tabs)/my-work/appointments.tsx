@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
@@ -15,6 +15,63 @@ import { handleSupabaseError } from '../../../lib/handle-error'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import { toWorkerAppointments, type WorkerAppointmentRow } from '../../../lib/types'
+
+const AppointmentCard = React.memo(function AppointmentCard({
+	item, today, updating, onUpdateStatus,
+}: {
+	item: WorkerAppointmentRow
+	today: string
+	updating: string | null
+	onUpdateStatus: (id: string, status: string) => void
+}) {
+	const isPast = item.date < today || ['completed', 'cancelled', 'no_show'].includes(item.status)
+	const canConfirm = item.status === 'pending'
+	const canComplete = item.status === 'confirmed'
+	const statusColor = BOOKING_STATUS_COLORS[item.status] ?? BOOKING_STATUS_COLORS.pending!
+	const dateObj = useMemo(() => new Date(item.date + 'T00:00:00'), [item.date])
+
+	return (
+		<View style={[styles.card, isPast && styles.cardPast]}>
+			<View style={styles.dateCol}>
+				<Text style={styles.dateMonth}>
+					{dateObj.toLocaleDateString('en-US', { month: 'short' })}
+				</Text>
+				<Text style={styles.dateDay}>{dateObj.getDate()}</Text>
+			</View>
+			<View style={styles.cardContent}>
+				<Text style={styles.clientName}>{item.profiles?.full_name ?? 'Client'}</Text>
+				<Text style={styles.serviceName}>{item.services?.name ?? 'Service'}</Text>
+				<View style={styles.timeRow}>
+					<Ionicons name="time-outline" size={12} color={colors.foregroundSecondary} />
+					<Text style={styles.timeText}>
+						{item.start_time.slice(0, 5)} – {item.end_time.slice(0, 5)}
+					</Text>
+				</View>
+			</View>
+			<View style={styles.cardRight}>
+				<View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
+					<Text style={[styles.statusText, { color: statusColor.text }]}>{item.status}</Text>
+				</View>
+				{(canConfirm || canComplete) && (
+					<TouchableOpacity
+						style={styles.actionBtn}
+						onPress={() => onUpdateStatus(item.id, canConfirm ? 'confirmed' : 'completed')}
+						disabled={updating === item.id}
+						activeOpacity={0.7}
+					>
+						{updating === item.id ? (
+							<ActivityIndicator size="small" color={colors.primary} />
+						) : (
+							<Text style={styles.actionBtnText}>
+								{canConfirm ? 'Confirm' : 'Complete'}
+							</Text>
+						)}
+					</TouchableOpacity>
+				)}
+			</View>
+		</View>
+	)
+})
 
 export default function AppointmentsScreen() {
 	const { user } = useAuth()
@@ -63,7 +120,7 @@ export default function AppointmentsScreen() {
 		return () => { isMounted = false }
 	}, [user])
 
-	async function handleUpdateStatus(bookingId: string, newStatus: string) {
+	const handleUpdateStatus = useCallback(async (bookingId: string, newStatus: string) => {
 		setUpdating(bookingId)
 		const { error } = await supabase
 			.from('bookings')
@@ -76,20 +133,24 @@ export default function AppointmentsScreen() {
 		} else {
 			setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: newStatus } : b))
 		}
-	}
+	}, [])
 
-	const today = new Date().toISOString().split('T')[0]!
+	const today = useMemo(() => new Date().toISOString().split('T')[0]!, [])
 
-	const todayBookings = bookings.filter((b) => b.date === today && !['cancelled', 'no_show'].includes(b.status))
-	const upcomingBookings = bookings.filter((b) => b.date > today && !['cancelled', 'no_show'].includes(b.status))
-	const pastBookings = bookings.filter((b) => b.date < today || ['cancelled', 'no_show', 'completed'].includes(b.status))
-		.filter((b) => b.date !== today || ['cancelled', 'no_show', 'completed'].includes(b.status))
-
-	const sections = [
-		{ title: 'Today', data: todayBookings },
-		{ title: 'Upcoming', data: upcomingBookings },
-		{ title: 'Past', data: pastBookings },
-	].filter((s) => s.data.length > 0)
+	const sections = useMemo(() => {
+		const terminal = new Set(['cancelled', 'no_show', 'completed'])
+		const hidden = new Set(['cancelled', 'no_show'])
+		const todayBookings = bookings.filter((b) => b.date === today && !hidden.has(b.status))
+		const upcomingBookings = bookings.filter((b) => b.date > today && !hidden.has(b.status))
+		const pastBookings = bookings.filter((b) =>
+			(b.date < today) || (terminal.has(b.status) && (b.date !== today || terminal.has(b.status)))
+		).filter((b) => b.date !== today || terminal.has(b.status))
+		return [
+			{ title: 'Today', data: todayBookings },
+			{ title: 'Upcoming', data: upcomingBookings },
+			{ title: 'Past', data: pastBookings },
+		].filter((s) => s.data.length > 0)
+	}, [bookings, today])
 
 	if (loading) {
 		return (
@@ -108,56 +169,14 @@ export default function AppointmentsScreen() {
 				renderSectionHeader={({ section }) => (
 					<Text style={styles.sectionHeader}>{section.title}</Text>
 				)}
-				renderItem={({ item }) => {
-					const isPast = item.date < today || ['completed', 'cancelled', 'no_show'].includes(item.status)
-					const canConfirm = item.status === 'pending'
-					const canComplete = item.status === 'confirmed'
-					const statusColor = BOOKING_STATUS_COLORS[item.status] ?? BOOKING_STATUS_COLORS.pending!
-
-					return (
-						<View style={[styles.card, isPast && styles.cardPast]}>
-							<View style={styles.dateCol}>
-								<Text style={styles.dateMonth}>
-									{new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })}
-								</Text>
-								<Text style={styles.dateDay}>
-									{new Date(item.date + 'T00:00:00').getDate()}
-								</Text>
-							</View>
-							<View style={styles.cardContent}>
-								<Text style={styles.clientName}>{item.profiles?.full_name ?? 'Client'}</Text>
-								<Text style={styles.serviceName}>{item.services?.name ?? 'Service'}</Text>
-								<View style={styles.timeRow}>
-									<Ionicons name="time-outline" size={12} color={colors.foregroundSecondary} />
-									<Text style={styles.timeText}>
-										{item.start_time.slice(0, 5)} – {item.end_time.slice(0, 5)}
-									</Text>
-								</View>
-							</View>
-							<View style={styles.cardRight}>
-								<View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-									<Text style={[styles.statusText, { color: statusColor.text }]}>{item.status}</Text>
-								</View>
-								{(canConfirm || canComplete) && (
-									<TouchableOpacity
-										style={styles.actionBtn}
-										onPress={() => handleUpdateStatus(item.id, canConfirm ? 'confirmed' : 'completed')}
-										disabled={updating === item.id}
-										activeOpacity={0.7}
-									>
-										{updating === item.id ? (
-											<ActivityIndicator size="small" color={colors.primary} />
-										) : (
-											<Text style={styles.actionBtnText}>
-												{canConfirm ? 'Confirm' : 'Complete'}
-											</Text>
-										)}
-									</TouchableOpacity>
-								)}
-							</View>
-						</View>
-					)
-				}}
+				renderItem={({ item }) => (
+					<AppointmentCard
+						item={item}
+						today={today}
+						updating={updating}
+						onUpdateStatus={handleUpdateStatus}
+					/>
+				)}
 				ListEmptyComponent={
 					<View style={styles.emptyState}>
 						<Ionicons name="clipboard-outline" size={48} color={colors.border} />
