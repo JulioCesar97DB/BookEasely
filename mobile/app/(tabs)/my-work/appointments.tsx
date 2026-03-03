@@ -24,39 +24,44 @@ export default function AppointmentsScreen() {
 
 	useEffect(() => {
 		if (!user) return
+		let isMounted = true
+
+		async function loadBookings() {
+			const { data: workerRecords, error: workersError } = await supabase
+				.from('workers')
+				.select('id')
+				.eq('user_id', user!.id)
+				.eq('is_active', true)
+
+			if (!isMounted) return
+			if (handleSupabaseError(workersError, 'Loading worker records')) {
+				setLoading(false)
+				return
+			}
+
+			const workerIds = workerRecords?.map((w) => w.id) ?? []
+			if (workerIds.length === 0) {
+				setLoading(false)
+				return
+			}
+
+			const { data, error } = await supabase
+				.from('bookings')
+				.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name)')
+				.in('worker_id', workerIds)
+				.order('date', { ascending: true })
+				.order('start_time', { ascending: true })
+				.limit(100)
+
+			if (!isMounted) return
+			handleSupabaseError(error, 'Loading appointments')
+			setBookings(toWorkerAppointments(data ?? []))
+			setLoading(false)
+		}
+
 		loadBookings()
+		return () => { isMounted = false }
 	}, [user])
-
-	async function loadBookings() {
-		const { data: workerRecords, error: workersError } = await supabase
-			.from('workers')
-			.select('id')
-			.eq('user_id', user!.id)
-			.eq('is_active', true)
-
-		if (handleSupabaseError(workersError, 'Loading worker records')) {
-			setLoading(false)
-			return
-		}
-
-		const workerIds = workerRecords?.map((w) => w.id) ?? []
-		if (workerIds.length === 0) {
-			setLoading(false)
-			return
-		}
-
-		const { data, error } = await supabase
-			.from('bookings')
-			.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name)')
-			.in('worker_id', workerIds)
-			.order('date', { ascending: true })
-			.order('start_time', { ascending: true })
-			.limit(100)
-
-		handleSupabaseError(error, 'Loading appointments')
-		setBookings(toWorkerAppointments(data ?? []))
-		setLoading(false)
-	}
 
 	async function handleUpdateStatus(bookingId: string, newStatus: string) {
 		setUpdating(bookingId)

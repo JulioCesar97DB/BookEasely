@@ -36,7 +36,7 @@ export default function BookingsScreen() {
 	const [rescheduleLoadingSlots, setRescheduleLoadingSlots] = useState(false)
 	const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
 
-	const fetchBookings = useCallback(async () => {
+	const fetchBookings = useCallback(async (options?: { signal?: boolean }) => {
 		if (!user) return
 		const { data, error } = await supabase
 			.from('bookings')
@@ -44,13 +44,18 @@ export default function BookingsScreen() {
 			.eq('client_id', user.id)
 			.order('date', { ascending: false })
 			.limit(50)
+		if (options?.signal === false) return
 		handleSupabaseError(error, 'Loading bookings')
 		setBookings(toClientBookings(data ?? []))
 		setLoading(false)
 		setRefreshing(false)
 	}, [user])
 
-	useEffect(() => { fetchBookings() }, [fetchBookings])
+	useEffect(() => {
+		let isMounted = true
+		fetchBookings({ signal: isMounted })
+		return () => { isMounted = false }
+	}, [fetchBookings])
 
 	const handleCancel = useCallback((bookingId: string) => {
 		Alert.alert('Cancel Booking', 'Are you sure you want to cancel?', [

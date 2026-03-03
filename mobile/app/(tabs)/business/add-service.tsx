@@ -14,6 +14,7 @@ import {
 	View,
 } from 'react-native'
 import { useAuth } from '../../../lib/auth-context'
+import { handleSupabaseError } from '../../../lib/handle-error'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import type { Worker } from '../../../lib/types'
@@ -42,26 +43,32 @@ export default function AddServiceScreen() {
 	useEffect(() => {
 		if (!user) return
 		async function load() {
-			const { data: biz } = await supabase
+			const { data: biz, error: bizError } = await supabase
 				.from('businesses')
 				.select('id')
 				.eq('owner_id', user!.id)
 				.single()
+			if (handleSupabaseError(bizError, 'Loading business')) {
+				setLoading(false)
+				return
+			}
 			if (biz) {
 				setBusinessId(biz.id)
 
 				// Load active workers for this business
-				const { data: workersData } = await supabase
+				const { data: workersData, error: workersError } = await supabase
 					.from('workers')
 					.select('id, display_name, is_active')
 					.eq('business_id', biz.id)
 					.eq('is_active', true)
 					.order('created_at')
+				handleSupabaseError(workersError, 'Loading workers')
 				setWorkers(workersData ?? [])
 			}
 
 			if (id) {
-				const { data } = await supabase.from('services').select('*').eq('id', id).single()
+				const { data, error: serviceError } = await supabase.from('services').select('*').eq('id', id).single()
+				handleSupabaseError(serviceError, 'Loading service')
 				if (data) {
 					setForm({
 						name: data.name,
@@ -73,10 +80,11 @@ export default function AddServiceScreen() {
 				}
 
 				// Load existing worker assignments
-				const { data: sw } = await supabase
+				const { data: sw, error: swError } = await supabase
 					.from('service_workers')
 					.select('worker_id')
 					.eq('service_id', id)
+				handleSupabaseError(swError, 'Loading worker assignments')
 				if (sw) {
 					setSelectedWorkerIds(new Set(sw.map((r) => r.worker_id)))
 				}

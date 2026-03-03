@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { useAuth } from '../../../lib/auth-context'
 import { DAYS_SHORT } from '../../../lib/constants'
+import { handleSupabaseError } from '../../../lib/handle-error'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 import type { Worker, WorkerAvailability, WorkerInvitation } from '../../../lib/types'
@@ -46,11 +47,15 @@ export default function WorkersScreen() {
 
 	const loadData = useCallback(async () => {
 		if (!user) return
-		const { data: biz } = await supabase
+		const { data: biz, error: bizError } = await supabase
 			.from('businesses')
 			.select('id')
 			.eq('owner_id', user.id)
 			.single()
+		if (handleSupabaseError(bizError, 'Loading business')) {
+			setLoading(false)
+			return
+		}
 		if (biz) {
 			setBusinessId(biz.id)
 			const [workersRes, invitesRes, availRes, swRes] = await Promise.all([
@@ -59,6 +64,10 @@ export default function WorkersScreen() {
 				supabase.from('worker_availability').select('*'),
 				supabase.from('service_workers').select('worker_id'),
 			])
+			handleSupabaseError(workersRes.error, 'Loading workers')
+			handleSupabaseError(invitesRes.error, 'Loading invitations')
+			handleSupabaseError(availRes.error, 'Loading availability')
+			handleSupabaseError(swRes.error, 'Loading service workers')
 			setWorkers(workersRes.data ?? [])
 			setInvitations(invitesRes.data ?? [])
 			setAvailability(availRes.data ?? [])

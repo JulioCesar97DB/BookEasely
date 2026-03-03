@@ -112,23 +112,28 @@ export default function BookScreen() {
 		setSelectedSlot(null)
 		setLoadingSlots(true)
 
-		if (anyWorkerMode) {
-			const { slots } = await getAvailableSlotsAnyWorker({ businessId, serviceId: selectedService.id, date })
-			const map = new Map<string, { workerId: string; workerName: string }>()
-			const timeSlots: TimeSlot[] = []
-			for (const slot of slots) {
-				map.set(slot.start, { workerId: slot.workerId, workerName: slot.workerName })
-				timeSlots.push({ start: slot.start, end: slot.end })
+		try {
+			if (anyWorkerMode) {
+				const { slots } = await getAvailableSlotsAnyWorker({ businessId, serviceId: selectedService.id, date })
+				const map = new Map<string, { workerId: string; workerName: string }>()
+				const timeSlots: TimeSlot[] = []
+				for (const slot of slots) {
+					map.set(slot.start, { workerId: slot.workerId, workerName: slot.workerName })
+					timeSlots.push({ start: slot.start, end: slot.end })
+				}
+				setSlotWorkerMap(map)
+				setAvailableSlots(timeSlots)
+			} else {
+				const slots = await getAvailableSlots({
+					businessId, serviceId: selectedService.id, workerId: selectedWorker!.id, date,
+				})
+				setAvailableSlots(slots)
 			}
-			setSlotWorkerMap(map)
-			setAvailableSlots(timeSlots)
-		} else {
-			const slots = await getAvailableSlots({
-				businessId, serviceId: selectedService.id, workerId: selectedWorker!.id, date,
-			})
-			setAvailableSlots(slots)
+		} catch (err) {
+			Alert.alert('Error', err instanceof Error ? err.message : 'Failed to load available time slots')
+		} finally {
+			setLoadingSlots(false)
 		}
-		setLoadingSlots(false)
 	}, [businessId, selectedService, selectedWorker, anyWorkerMode])
 
 	const resolvedWorkerId = anyWorkerMode && selectedSlot
