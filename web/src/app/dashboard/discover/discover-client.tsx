@@ -121,6 +121,7 @@ export function DiscoverClient({
 								initial={{ opacity: 0, y: 12 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{ delay: i * 0.04, duration: 0.3 }}
+								className="h-full"
 							>
 								<BusinessCard business={business} />
 							</motion.div>

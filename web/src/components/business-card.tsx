@@ -19,7 +19,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
 	return (
 		<Link
 			href={`/business/${business.slug}`}
-			className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
+			className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
 		>
 			<BusinessImageCarousel
 				images={images}
