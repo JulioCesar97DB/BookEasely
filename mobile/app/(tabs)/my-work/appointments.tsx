@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { useAuth } from '../../../lib/auth-context'
 import { BOOKING_STATUS_COLORS } from '../../../lib/constants'
+import { handleSupabaseError } from '../../../lib/handle-error'
 import { supabase } from '../../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../../lib/theme'
 
@@ -37,11 +38,16 @@ export default function AppointmentsScreen() {
 	}, [user])
 
 	async function loadBookings() {
-		const { data: workerRecords } = await supabase
+		const { data: workerRecords, error: workersError } = await supabase
 			.from('workers')
 			.select('id')
 			.eq('user_id', user!.id)
 			.eq('is_active', true)
+
+		if (handleSupabaseError(workersError, 'Loading worker records')) {
+			setLoading(false)
+			return
+		}
 
 		const workerIds = workerRecords?.map((w) => w.id) ?? []
 		if (workerIds.length === 0) {
@@ -49,7 +55,7 @@ export default function AppointmentsScreen() {
 			return
 		}
 
-		const { data } = await supabase
+		const { data, error } = await supabase
 			.from('bookings')
 			.select('id, date, start_time, end_time, status, note, services(name, duration_minutes, price), profiles!bookings_client_id_fkey(full_name)')
 			.in('worker_id', workerIds)
@@ -57,6 +63,7 @@ export default function AppointmentsScreen() {
 			.order('start_time', { ascending: true })
 			.limit(100)
 
+		handleSupabaseError(error, 'Loading appointments')
 		setBookings((data ?? []) as unknown as BookingItem[])
 		setLoading(false)
 	}

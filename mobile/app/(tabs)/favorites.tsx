@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BusinessCard } from '../../components/business-card'
 import { useAuth } from '../../lib/auth-context'
+import { handleSupabaseError } from '../../lib/handle-error'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 import type { BusinessWithCategory } from '../../lib/types'
@@ -27,12 +28,13 @@ export default function FavoritesScreen() {
 
 	const fetchFavorites = useCallback(async () => {
 		if (!user) return
-		const { data } = await supabase
+		const { data, error } = await supabase
 			.from('favorites')
 			.select('id, businesses(*, categories(name, slug))')
 			.eq('client_id', user.id)
 			.order('created_at', { ascending: false })
 
+		handleSupabaseError(error, 'Loading favorites')
 		const businesses = (data ?? [])
 			.map((f: any) => f.businesses)
 			.filter(Boolean)
