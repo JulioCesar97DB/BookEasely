@@ -3,11 +3,59 @@
 import { createClient } from '@/lib/supabase/server'
 import { workerSchema } from '@/lib/validations/business'
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
-export async function addSelfAsWorker(businessId: string, data: Record<string, unknown>) {
+const uuid = z.string().uuid()
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+async function getAuthUser() {
 	const supabase = await createClient()
 	const { data: { user } } = await supabase.auth.getUser()
+	return { supabase, user }
+}
+
+/** Verify the authenticated user owns the business that this worker belongs to */
+async function verifyWorkerOwnership(supabase: Awaited<ReturnType<typeof createClient>>, workerId: string, userId: string) {
+	const { data: worker } = await supabase
+		.from('workers')
+		.select('business_id')
+		.eq('id', workerId)
+		.single()
+
+	if (!worker) return false
+
+	const { data: business } = await supabase
+		.from('businesses')
+		.select('id')
+		.eq('id', worker.business_id)
+		.eq('owner_id', userId)
+		.single()
+
+	return !!business
+}
+
+/** Verify the authenticated user owns the given business */
+async function verifyBusinessOwnership(supabase: Awaited<ReturnType<typeof createClient>>, businessId: string, userId: string) {
+	const { data } = await supabase
+		.from('businesses')
+		.select('id')
+		.eq('id', businessId)
+		.eq('owner_id', userId)
+		.single()
+	return !!data
+}
+
+// ── Actions ──────────────────────────────────────────────────────────
+
+export async function addSelfAsWorker(businessId: string, data: Record<string, unknown>) {
+	if (!uuid.safeParse(businessId).success) return { error: 'Invalid business ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	const isOwner = await verifyBusinessOwnership(supabase, businessId, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const parsed = workerSchema.safeParse(data)
 	if (!parsed.success) {
@@ -33,9 +81,13 @@ export async function inviteWorker(
 	businessId: string,
 	data: { email: string; display_name: string; bio: string; specialties: string[] }
 ) {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	if (!uuid.safeParse(businessId).success) return { error: 'Invalid business ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	const isOwner = await verifyBusinessOwnership(supabase, businessId, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const email = data.email.trim().toLowerCase()
 	if (!email) return { error: 'Email is required' }
@@ -65,7 +117,6 @@ export async function inviteWorker(
 		.single()
 
 	if (existingProfile) {
-		// Check if already a worker for this business
 		const { data: existingWorker } = await supabase
 			.from('workers')
 			.select('id')
@@ -77,7 +128,6 @@ export async function inviteWorker(
 			return { error: 'This person is already a worker for your business' }
 		}
 
-		// User exists — create worker directly
 		const { error: workerError } = await supabase.from('workers').insert({
 			business_id: businessId,
 			user_id: existingProfile.id,
@@ -89,7 +139,6 @@ export async function inviteWorker(
 
 		if (workerError) return { error: workerError.message }
 
-		// Create accepted invitation record for history
 		await supabase.from('worker_invitations').insert({
 			business_id: businessId,
 			email,
@@ -123,9 +172,22 @@ export async function inviteWorker(
 }
 
 export async function cancelInvitation(invitationId: string) {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	if (!uuid.safeParse(invitationId).success) return { error: 'Invalid invitation ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	// Verify user owns the business this invitation belongs to
+	const { data: invitation } = await supabase
+		.from('worker_invitations')
+		.select('business_id')
+		.eq('id', invitationId)
+		.single()
+
+	if (!invitation) return { error: 'Invitation not found' }
+
+	const isOwner = await verifyBusinessOwnership(supabase, invitation.business_id, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const { error } = await supabase
 		.from('worker_invitations')
@@ -139,9 +201,13 @@ export async function cancelInvitation(invitationId: string) {
 }
 
 export async function updateWorker(workerId: string, data: Record<string, unknown>) {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	if (!uuid.safeParse(workerId).success) return { error: 'Invalid worker ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	const isOwner = await verifyWorkerOwnership(supabase, workerId, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const parsed = workerSchema.safeParse(data)
 	if (!parsed.success) {
@@ -165,9 +231,13 @@ export async function updateWorker(workerId: string, data: Record<string, unknow
 }
 
 export async function toggleWorkerActive(workerId: string, isActive: boolean) {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	if (!uuid.safeParse(workerId).success) return { error: 'Invalid worker ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	const isOwner = await verifyWorkerOwnership(supabase, workerId, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const { error } = await supabase
 		.from('workers')
@@ -184,9 +254,13 @@ export async function upsertWorkerAvailability(
 	workerId: string,
 	availability: Array<{ day_of_week: number; start_time: string; end_time: string; is_active: boolean }>
 ) {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	if (!uuid.safeParse(workerId).success) return { error: 'Invalid worker ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	const isOwner = await verifyWorkerOwnership(supabase, workerId, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const rows = availability.map((a) => ({
 		worker_id: workerId,
@@ -196,7 +270,6 @@ export async function upsertWorkerAvailability(
 		is_active: a.is_active,
 	}))
 
-	// Delete existing and re-insert for clean sync
 	await supabase.from('worker_availability').delete().eq('worker_id', workerId)
 	const { error } = await supabase.from('worker_availability').insert(rows)
 
@@ -211,9 +284,13 @@ export async function addBlockedDate(
 	workerId: string,
 	data: { date: string; start_time?: string; end_time?: string; reason?: string }
 ) {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	if (!uuid.safeParse(workerId).success) return { error: 'Invalid worker ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	const isOwner = await verifyWorkerOwnership(supabase, workerId, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const { error } = await supabase.from('worker_blocked_dates').insert({
 		worker_id: workerId,
@@ -231,9 +308,22 @@ export async function addBlockedDate(
 }
 
 export async function removeBlockedDate(blockedDateId: string) {
-	const supabase = await createClient()
-	const { data: { user } } = await supabase.auth.getUser()
+	if (!uuid.safeParse(blockedDateId).success) return { error: 'Invalid blocked date ID' }
+
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	// Verify ownership through the blocked date -> worker -> business chain
+	const { data: blockedDate } = await supabase
+		.from('worker_blocked_dates')
+		.select('worker_id')
+		.eq('id', blockedDateId)
+		.single()
+
+	if (!blockedDate) return { error: 'Blocked date not found' }
+
+	const isOwner = await verifyWorkerOwnership(supabase, blockedDate.worker_id, user.id)
+	if (!isOwner) return { error: 'Not authorized' }
 
 	const { error } = await supabase
 		.from('worker_blocked_dates')

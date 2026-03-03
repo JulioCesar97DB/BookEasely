@@ -48,8 +48,10 @@ export function useBusinessSearch({
 			q = q.ilike('name', `%${query.trim()}%`)
 		}
 
-		const { data } = await q
-		setBusinesses(data ?? [])
+		const { data, error } = await q
+		if (!error) {
+			setBusinesses(data ?? [])
+		}
 		setIsLoading(false)
 	}, [])
 

@@ -1,25 +1,53 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import {
+	bookingIdSchema,
+	businessIdSchema,
+	cancelBookingSchema,
+	createBookingSchema,
+	getAvailableSlotsSchema,
+	getAvailableWorkersSchema,
+	notificationIdSchema,
+	rescheduleBookingSchema,
+	respondToReviewSchema,
+	submitReviewSchema,
+} from '@/lib/validations/booking'
 import { revalidatePath } from 'next/cache'
 import { generateTimeSlots, type TimeSlot } from './time-slots'
 
+// ── Helpers ──────────────────────────────────────────────────────────
+
+async function getAuthUser() {
+	const supabase = await createClient()
+	const { data: { user } } = await supabase.auth.getUser()
+	return { supabase, user }
+}
+
+async function verifyBusinessOwner(supabase: Awaited<ReturnType<typeof createClient>>, businessId: string, userId: string) {
+	const { data } = await supabase
+		.from('businesses')
+		.select('id')
+		.eq('id', businessId)
+		.eq('owner_id', userId)
+		.single()
+	return !!data
+}
+
 // ── Get available time slots for a service + worker + date ──────────
 
-export async function getAvailableSlots({
-	businessId,
-	serviceId,
-	workerId,
-	date,
-}: {
+export async function getAvailableSlots(input: {
 	businessId: string
 	serviceId: string
 	workerId: string
-	date: string // YYYY-MM-DD
+	date: string
 }): Promise<{ slots: TimeSlot[]; error?: string }> {
+	const parsed = getAvailableSlotsSchema.safeParse(input)
+	if (!parsed.success) return { slots: [], error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+
+	const { businessId, serviceId, workerId, date } = parsed.data
 	const supabase = await createClient()
 
-	// Get service duration
 	const { data: service } = await supabase
 		.from('services')
 		.select('duration_minutes')
@@ -28,7 +56,6 @@ export async function getAvailableSlots({
 
 	if (!service) return { slots: [], error: 'Service not found' }
 
-	// Get business buffer
 	const { data: business } = await supabase
 		.from('businesses')
 		.select('buffer_minutes')
@@ -36,11 +63,8 @@ export async function getAvailableSlots({
 		.single()
 
 	const bufferMinutes = business?.buffer_minutes ?? 0
-
-	// Get day of week for the requested date
 	const dayOfWeek = new Date(date + 'T12:00:00').getDay()
 
-	// Get worker availability for that day
 	const { data: availability } = await supabase
 		.from('worker_availability')
 		.select('start_time, end_time')
@@ -52,7 +76,6 @@ export async function getAvailableSlots({
 		return { slots: [], error: 'Worker not available on this day' }
 	}
 
-	// Get existing bookings for this worker on this date (non-cancelled)
 	const { data: existingBookings } = await supabase
 		.from('bookings')
 		.select('start_time, end_time')
@@ -60,7 +83,6 @@ export async function getAvailableSlots({
 		.eq('date', date)
 		.in('status', ['pending', 'confirmed'])
 
-	// Get blocked dates for this worker
 	const { data: blockedDates } = await supabase
 		.from('worker_blocked_dates')
 		.select('date, start_time, end_time')
@@ -81,20 +103,19 @@ export async function getAvailableSlots({
 
 // ── Get available workers for a service + date (with slot counts) ───
 
-export async function getAvailableWorkers({
-	businessId,
-	serviceId,
-	date,
-}: {
+export async function getAvailableWorkers(input: {
 	businessId: string
 	serviceId: string
 	date: string
 }): Promise<{
 	workers: { id: string; display_name: string; avatar_url: string | null; slotCount: number }[]
 }> {
+	const parsed = getAvailableWorkersSchema.safeParse(input)
+	if (!parsed.success) return { workers: [] }
+
+	const { businessId, serviceId, date } = parsed.data
 	const supabase = await createClient()
 
-	// Get workers assigned to this service
 	const { data: serviceWorkers } = await supabase
 		.from('service_workers')
 		.select('worker_id, workers(id, display_name, avatar_url, is_active)')
@@ -107,7 +128,6 @@ export async function getAvailableWorkers({
 		.map((sw) => sw.workers as unknown as WorkerInfo | null)
 		.filter((w): w is WorkerInfo => w !== null && w.is_active)
 
-	// For each worker, count available slots
 	const result = await Promise.all(
 		activeWorkers.map(async (worker) => {
 			const { slots } = await getAvailableSlots({
@@ -125,28 +145,28 @@ export async function getAvailableWorkers({
 		})
 	)
 
-	// Only return workers with available slots
 	return { workers: result.filter((w) => w.slotCount > 0) }
 }
 
 // ── Get available slots across ALL workers for a service + date ─────
 
-export async function getAvailableSlotsAnyWorker({
-	businessId,
-	serviceId,
-	date,
-}: {
+export async function getAvailableSlotsAnyWorker(input: {
 	businessId: string
 	serviceId: string
 	date: string
 }): Promise<{ slots: (TimeSlot & { workerId: string; workerName: string })[] }> {
-	const { workers } = await getAvailableWorkers({ businessId, serviceId, date })
+	const { workers } = await getAvailableWorkers(input)
 
 	const allSlots: (TimeSlot & { workerId: string; workerName: string })[] = []
 	const seenTimes = new Set<string>()
 
 	for (const worker of workers) {
-		const { slots } = await getAvailableSlots({ businessId, serviceId, workerId: worker.id, date })
+		const { slots } = await getAvailableSlots({
+			businessId: input.businessId,
+			serviceId: input.serviceId,
+			workerId: worker.id,
+			date: input.date,
+		})
 		for (const slot of slots) {
 			if (!seenTimes.has(slot.start)) {
 				seenTimes.add(slot.start)
@@ -161,15 +181,7 @@ export async function getAvailableSlotsAnyWorker({
 
 // ── Create a booking ────────────────────────────────────────────────
 
-export async function createBooking({
-	businessId,
-	serviceId,
-	workerId,
-	date,
-	startTime,
-	endTime,
-	note,
-}: {
+export async function createBooking(input: {
 	businessId: string
 	serviceId: string
 	workerId: string
@@ -178,28 +190,19 @@ export async function createBooking({
 	endTime: string
 	note?: string
 }): Promise<{ bookingId?: string; error?: string }> {
-	const supabase = await createClient()
+	const parsed = createBookingSchema.safeParse(input)
+	if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
 
-	const { data: { user } } = await supabase.auth.getUser()
+	const { businessId, serviceId, workerId, date, startTime, endTime, note } = parsed.data
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
 
-	// Verify the slot is still available (race condition prevention)
-	const { slots } = await getAvailableSlots({
-		businessId,
-		serviceId,
-		workerId,
-		date,
-	})
-
-	const slotAvailable = slots.some(
-		(s) => s.start === startTime && s.end === endTime
-	)
-
+	const { slots } = await getAvailableSlots({ businessId, serviceId, workerId, date })
+	const slotAvailable = slots.some((s) => s.start === startTime && s.end === endTime)
 	if (!slotAvailable) {
 		return { error: 'This time slot is no longer available. Please select another time.' }
 	}
 
-	// Check if business has auto_confirm
 	const { data: business } = await supabase
 		.from('businesses')
 		.select('auto_confirm')
@@ -208,7 +211,6 @@ export async function createBooking({
 
 	const status = business?.auto_confirm ? 'confirmed' : 'pending'
 
-	// Create the booking
 	const { data: booking, error } = await supabase
 		.from('bookings')
 		.insert({
@@ -238,17 +240,29 @@ export async function createBooking({
 
 // ── Cancel a booking ────────────────────────────────────────────────
 
-export async function cancelBooking({
-	bookingId,
-	reason,
-}: {
+export async function cancelBooking(input: {
 	bookingId: string
 	reason?: string
 }): Promise<{ error?: string }> {
-	const supabase = await createClient()
+	const parsed = cancelBookingSchema.safeParse(input)
+	if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
 
-	const { data: { user } } = await supabase.auth.getUser()
+	const { bookingId, reason } = parsed.data
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	// Verify user is the client or business owner of this booking
+	const { data: booking } = await supabase
+		.from('bookings')
+		.select('client_id, business_id')
+		.eq('id', bookingId)
+		.single()
+
+	if (!booking) return { error: 'Booking not found' }
+
+	const isClient = booking.client_id === user.id
+	const isOwner = await verifyBusinessOwner(supabase, booking.business_id, user.id)
+	if (!isClient && !isOwner) return { error: 'Not authorized to cancel this booking' }
 
 	const { error } = await supabase
 		.from('bookings')
@@ -268,37 +282,36 @@ export async function cancelBooking({
 
 // ── Reschedule a booking ────────────────────────────────────────────
 
-export async function rescheduleBooking({
-	bookingId,
-	workerId,
-	date,
-	startTime,
-	endTime,
-}: {
+export async function rescheduleBooking(input: {
 	bookingId: string
 	workerId: string
 	date: string
 	startTime: string
 	endTime: string
 }): Promise<{ error?: string }> {
-	const supabase = await createClient()
+	const parsed = rescheduleBookingSchema.safeParse(input)
+	if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
 
-	const { data: { user } } = await supabase.auth.getUser()
+	const { bookingId, workerId, date, startTime, endTime } = parsed.data
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
 
-	// Get original booking
 	const { data: booking } = await supabase
 		.from('bookings')
-		.select('business_id, service_id, status')
+		.select('client_id, business_id, service_id, status')
 		.eq('id', bookingId)
 		.single()
 
 	if (!booking) return { error: 'Booking not found' }
+
+	const isClient = booking.client_id === user.id
+	const isOwner = await verifyBusinessOwner(supabase, booking.business_id, user.id)
+	if (!isClient && !isOwner) return { error: 'Not authorized to reschedule this booking' }
+
 	if (booking.status === 'cancelled' || booking.status === 'completed' || booking.status === 'no_show') {
 		return { error: 'Cannot reschedule a booking that is already ' + booking.status }
 	}
 
-	// Verify the new slot is available
 	const { slots } = await getAvailableSlots({
 		businessId: booking.business_id,
 		serviceId: booking.service_id,
@@ -306,22 +319,18 @@ export async function rescheduleBooking({
 		date,
 	})
 
-	const slotAvailable = slots.some(
-		(s) => s.start === startTime && s.end === endTime
-	)
-
+	const slotAvailable = slots.some((s) => s.start === startTime && s.end === endTime)
 	if (!slotAvailable) {
 		return { error: 'This time slot is no longer available.' }
 	}
 
-	// Check auto_confirm
 	const { data: business } = await supabase
 		.from('businesses')
 		.select('auto_confirm')
 		.eq('id', booking.business_id)
 		.single()
 
-	const status = business?.auto_confirm ? 'confirmed' : 'pending'
+	const newStatus = business?.auto_confirm ? 'confirmed' : 'pending'
 
 	const { error } = await supabase
 		.from('bookings')
@@ -330,7 +339,7 @@ export async function rescheduleBooking({
 			date,
 			start_time: startTime,
 			end_time: endTime,
-			status,
+			status: newStatus,
 			updated_at: new Date().toISOString(),
 		})
 		.eq('id', bookingId)
@@ -344,12 +353,12 @@ export async function rescheduleBooking({
 // ── Toggle favorite ─────────────────────────────────────────────────
 
 export async function toggleFavorite(businessId: string): Promise<{ isFavorited: boolean; error?: string }> {
-	const supabase = await createClient()
+	const parsed = businessIdSchema.safeParse(businessId)
+	if (!parsed.success) return { isFavorited: false, error: 'Invalid business ID' }
 
-	const { data: { user } } = await supabase.auth.getUser()
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { isFavorited: false, error: 'Not authenticated' }
 
-	// Check if already favorited
 	const { data: existing } = await supabase
 		.from('favorites')
 		.select('id')
@@ -374,23 +383,29 @@ export async function toggleFavorite(businessId: string): Promise<{ isFavorited:
 
 // ── Submit a review ─────────────────────────────────────────────────
 
-export async function submitReview({
-	bookingId,
-	businessId,
-	rating,
-	comment,
-}: {
+export async function submitReview(input: {
 	bookingId: string
 	businessId: string
 	rating: number
 	comment?: string
 }): Promise<{ error?: string }> {
-	const supabase = await createClient()
+	const parsed = submitReviewSchema.safeParse(input)
+	if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
 
-	const { data: { user } } = await supabase.auth.getUser()
+	const { bookingId, businessId, rating, comment } = parsed.data
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
 
-	if (rating < 1 || rating > 5) return { error: 'Rating must be between 1 and 5' }
+	// Verify user is the client of this booking and it's completed
+	const { data: booking } = await supabase
+		.from('bookings')
+		.select('client_id, status')
+		.eq('id', bookingId)
+		.single()
+
+	if (!booking) return { error: 'Booking not found' }
+	if (booking.client_id !== user.id) return { error: 'Not authorized to review this booking' }
+	if (booking.status !== 'completed') return { error: 'Can only review completed bookings' }
 
 	const { error } = await supabase.from('reviews').insert({
 		booking_id: bookingId,
@@ -414,17 +429,28 @@ export async function submitReview({
 
 // ── Respond to a review (business owner) ────────────────────────────
 
-export async function respondToReview({
-	reviewId,
-	response,
-}: {
+export async function respondToReview(input: {
 	reviewId: string
 	response: string
 }): Promise<{ error?: string }> {
-	const supabase = await createClient()
+	const parsed = respondToReviewSchema.safeParse(input)
+	if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
 
-	const { data: { user } } = await supabase.auth.getUser()
+	const { reviewId, response } = parsed.data
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
+
+	// Verify user owns the business this review belongs to
+	const { data: review } = await supabase
+		.from('reviews')
+		.select('business_id')
+		.eq('id', reviewId)
+		.single()
+
+	if (!review) return { error: 'Review not found' }
+
+	const isOwner = await verifyBusinessOwner(supabase, review.business_id, user.id)
+	if (!isOwner) return { error: 'Not authorized to respond to this review' }
 
 	const { error } = await supabase
 		.from('reviews')
@@ -440,21 +466,25 @@ export async function respondToReview({
 // ── Mark notification as read ───────────────────────────────────────
 
 export async function markNotificationRead(notificationId: string): Promise<{ error?: string }> {
-	const supabase = await createClient()
+	const parsed = notificationIdSchema.safeParse(notificationId)
+	if (!parsed.success) return { error: 'Invalid notification ID' }
 
+	const { supabase, user } = await getAuthUser()
+	if (!user) return { error: 'Not authenticated' }
+
+	// Only mark own notifications as read
 	const { error } = await supabase
 		.from('notifications')
 		.update({ is_read: true })
 		.eq('id', notificationId)
+		.eq('user_id', user.id)
 
 	if (error) return { error: error.message }
 	return {}
 }
 
 export async function markAllNotificationsRead(): Promise<{ error?: string }> {
-	const supabase = await createClient()
-
-	const { data: { user } } = await supabase.auth.getUser()
+	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
 
 	const { error } = await supabase
