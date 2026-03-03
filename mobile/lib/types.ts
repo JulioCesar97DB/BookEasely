@@ -119,12 +119,45 @@ export interface Booking {
 	end_time: string
 	status: BookingStatus
 	note: string | null
+	cancelled_by: string | null
+	cancellation_reason: string | null
 	created_at: string
 	updated_at: string
 }
 
 export interface BusinessWithCategory extends Business {
 	categories?: { name: string; slug: string } | null
+}
+
+export interface Review {
+	id: string
+	booking_id: string
+	client_id: string
+	business_id: string
+	rating: number
+	comment: string | null
+	business_response: string | null
+	is_flagged: boolean
+	created_at: string
+	updated_at: string
+}
+
+export interface Notification {
+	id: string
+	user_id: string
+	type: string
+	title: string
+	body: string
+	is_read: boolean
+	data: Record<string, unknown> | null
+	created_at: string
+}
+
+export interface Favorite {
+	id: string
+	client_id: string
+	business_id: string
+	created_at: string
 }
 
 export interface WorkerInvitation {
