@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
 	dotActive: {
 		width: 16,
 		height: 5,
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.white,
 		borderRadius: 3,
 	},
 	dotInactive: {

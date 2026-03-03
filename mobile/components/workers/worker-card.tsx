@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
 	specText: { fontSize: 10, color: colors.foregroundSecondary },
 	memberSince: { fontSize: 10, color: colors.foregroundSecondary, marginTop: spacing.sm, opacity: 0.6 },
 	statusDot: { width: 8, height: 8, borderRadius: 4 },
-	statusActive: { backgroundColor: '#30A46C' },
+	statusActive: { backgroundColor: colors.success },
 	statusInactive: { backgroundColor: colors.border },
 	cardActions: {
 		flexDirection: 'row',

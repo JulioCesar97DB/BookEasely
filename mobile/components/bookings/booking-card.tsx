@@ -29,7 +29,7 @@ export const BookingCard = React.memo(function BookingCard({ item, today, onCanc
 	const isPast = item.date < today || item.status === 'cancelled'
 	const canCancel = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
 	const canReschedule = (item.status === 'pending' || item.status === 'confirmed') && item.date >= today
-	const statusColor = BOOKING_STATUS_COLORS[item.status] ?? { bg: '#F3F4F6', text: '#374151' }
+	const statusColor = BOOKING_STATUS_COLORS[item.status] ?? { bg: colors.mutedLight, text: colors.muted }
 	const dateObj = useMemo(() => new Date(item.date + 'T00:00:00'), [item.date])
 
 	return (

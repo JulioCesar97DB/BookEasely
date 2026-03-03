@@ -12,17 +12,32 @@ export const colors = {
 	destructiveLight: '#FFECEE',
 	success: '#30A46C',
 	successLight: '#D4F7E2',
+	successDark: '#065F46',
 	warning: '#F59E0B',
 	warningLight: '#FEF3C7',
 	warningDark: '#92400E',
 	info: '#0091FF',
 	infoLight: '#DBEAFE',
+	infoDark: '#1E40AF',
 	danger: '#E5484D',
 	dangerLight: '#FFE5E5',
+	dangerDark: '#991B1B',
 	star: '#F59E0B',
 	muted: '#6B7280',
 	mutedLight: '#F3F4F6',
 	white: '#FFFFFF',
+	// Status indicator colors
+	openBg: '#F0FDF4',
+	openBorder: '#BBF7D0',
+	openText: '#15803D',
+	closedBg: '#FEF2F2',
+	closedBorder: '#FECACA',
+	closedText: '#DC2626',
+	// Accent palette
+	accentOrange: '#F76B15',
+	accentPurple: '#6E56CF',
+	blockedRed: '#EF4444',
+	blockedRedLight: '#FEE2E2',
 } as const
 
 export const spacing = {

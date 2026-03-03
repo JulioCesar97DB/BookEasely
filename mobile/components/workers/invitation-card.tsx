@@ -13,7 +13,7 @@ export const InvitationCard = React.memo(function InvitationCard({ invitation, o
 	return (
 		<View style={styles.invitationCard}>
 			<View style={styles.invitationIcon}>
-				<Ionicons name="mail-outline" size={18} color="#D97706" />
+				<Ionicons name="mail-outline" size={18} color={colors.warningDark} />
 			</View>
 			<View style={styles.invitationBody}>
 				<Text style={styles.invitationName}>{invitation.display_name}</Text>
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
 		width: 36,
 		height: 36,
 		borderRadius: 18,
-		backgroundColor: '#FEF3C7',
+		backgroundColor: colors.warningLight,
 		justifyContent: 'center',
 		alignItems: 'center',
 	},

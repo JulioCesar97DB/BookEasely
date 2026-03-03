@@ -22,8 +22,8 @@ const actions: QuickAction[] = [
 	{ label: 'Services', icon: 'clipboard-outline', route: '/(tabs)/business/services', color: colors.success },
 	{ label: 'Team', icon: 'people-outline', route: '/(tabs)/business/workers', color: colors.danger },
 	{ label: 'Schedule', icon: 'calendar-outline', route: '/(tabs)/business/schedule', color: colors.info },
-	{ label: 'Hours', icon: 'time-outline', route: '/(tabs)/business/hours', color: '#F76B15' },
-	{ label: 'Settings', icon: 'settings-outline', route: '/(tabs)/business/settings', color: '#6E56CF' },
+	{ label: 'Hours', icon: 'time-outline', route: '/(tabs)/business/hours', color: colors.accentOrange },
+	{ label: 'Settings', icon: 'settings-outline', route: '/(tabs)/business/settings', color: colors.accentPurple },
 ]
 
 export default function BusinessDashboard() {

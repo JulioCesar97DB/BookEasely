@@ -266,8 +266,8 @@ export default function ScheduleScreen() {
 																	height: Math.min(heightPx, 300),
 																	left: (wIdx / visibleWorkersList.length) * CELL_WIDTH,
 																	width: CELL_WIDTH / visibleWorkersList.length,
-																	backgroundColor: isBlocked ? '#FEE2E2' : color + '30',
-																	borderLeftColor: isBlocked ? '#EF4444' : color,
+																	backgroundColor: isBlocked ? colors.blockedRedLight : color + '30',
+																	borderLeftColor: isBlocked ? colors.blockedRed : color,
 																},
 															]}
 														>
@@ -380,5 +380,5 @@ const styles = StyleSheet.create({
 		overflow: 'hidden' as const,
 	},
 	blockText: { fontSize: 8, fontWeight: '600' },
-	blockedText: { fontSize: 8, fontWeight: '600', color: '#EF4444' },
+	blockedText: { fontSize: 8, fontWeight: '600', color: colors.blockedRed },
 })

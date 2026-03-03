@@ -47,7 +47,7 @@ export function ProfileHero({ business, hours, images, activeTab, onTabChange }:
 						onPress={() => router.back()}
 						activeOpacity={0.7}
 					>
-						<Ionicons name="chevron-back" size={22} color="#fff" />
+						<Ionicons name="chevron-back" size={22} color={colors.white} />
 					</TouchableOpacity>
 				</SafeAreaView>
 
@@ -160,11 +160,11 @@ const styles = StyleSheet.create({
 	heroNavButton: { width: 36, height: 36, borderRadius: radius.full, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
 	heroInfo: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.lg },
 	categoryBadge: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: spacing.xs },
-	categoryBadgeText: { fontSize: fontSize.xs, color: '#fff', fontWeight: '500' },
-	heroName: { fontSize: fontSize['2xl'], fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
+	categoryBadgeText: { fontSize: fontSize.xs, color: colors.white, fontWeight: '500' },
+	heroName: { fontSize: fontSize['2xl'], fontWeight: '700', color: colors.white, letterSpacing: -0.5 },
 	heroMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
 	ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-	heroRating: { fontSize: fontSize.sm, fontWeight: '600', color: '#fff' },
+	heroRating: { fontSize: fontSize.sm, fontWeight: '600', color: colors.white },
 	heroRatingCount: { fontSize: fontSize.xs, color: 'rgba(255,255,255,0.6)' },
 	heroNoReviews: { fontSize: fontSize.xs, color: 'rgba(255,255,255,0.6)' },
 	heroDivider: { color: 'rgba(255,255,255,0.3)', fontSize: fontSize.sm },
@@ -176,12 +176,12 @@ const styles = StyleSheet.create({
 	infoItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 	infoText: { fontSize: fontSize.xs, color: colors.foregroundSecondary },
 	statusBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full, borderWidth: 1 },
-	statusOpen: { borderColor: '#BBF7D0', backgroundColor: '#F0FDF4' },
-	statusClosed: { borderColor: '#FECACA', backgroundColor: '#FEF2F2' },
+	statusOpen: { borderColor: colors.openBorder, backgroundColor: colors.openBg },
+	statusClosed: { borderColor: colors.closedBorder, backgroundColor: colors.closedBg },
 	statusText: { fontSize: 11, fontWeight: '600' },
-	statusTextOpen: { color: '#15803D' },
-	statusTextClosed: { color: '#DC2626' },
-	instantBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full, borderWidth: 1, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' },
+	statusTextOpen: { color: colors.openText },
+	statusTextClosed: { color: colors.closedText },
+	instantBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full, borderWidth: 1, borderColor: colors.infoLight, backgroundColor: colors.infoLight + '40' },
 	instantText: { fontSize: 11, fontWeight: '600', color: colors.primary },
 
 	descriptionSection: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surfaceSecondary },
