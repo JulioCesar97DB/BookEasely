@@ -39,9 +39,9 @@ export function BusinessHero({ business, hours, bookingUrl }: BusinessHeroProps)
 					sizes="100vw"
 					showArrows
 				/>
-				<div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+				<div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
 
-				<div className="absolute bottom-0 left-0 right-0 px-4 pb-6 sm:px-6 lg:px-8">
+				<div className="absolute bottom-0 left-0 right-0 px-4 pb-6 sm:px-6 lg:px-8 pointer-events-none">
 					<div className="mx-auto max-w-5xl">
 						{business.categories?.name && (
 							<Badge
