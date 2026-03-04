@@ -79,7 +79,7 @@ export async function addSelfAsWorker(businessId: string, data: Record<string, u
 
 export async function inviteWorker(
 	businessId: string,
-	data: { email: string; display_name: string; bio: string; specialties: string[] }
+	data: { phone: string; display_name: string; bio: string; specialties: string[] }
 ) {
 	if (!uuid.safeParse(businessId).success) return { error: 'Invalid business ID' }
 
@@ -89,20 +89,20 @@ export async function inviteWorker(
 	const isOwner = await verifyBusinessOwnership(supabase, businessId, user.id)
 	if (!isOwner) return { error: 'Not authorized' }
 
-	const email = data.email.trim().toLowerCase()
-	if (!email) return { error: 'Email is required' }
+	const phone = data.phone.trim()
+	if (!phone) return { error: 'Phone number is required' }
 
 	// Check if already invited
 	const { data: existingInvite } = await supabase
 		.from('worker_invitations')
 		.select('id, status')
-		.eq('email', email)
+		.eq('phone', phone)
 		.eq('business_id', businessId)
 		.single()
 
 	if (existingInvite) {
 		if (existingInvite.status === 'pending') {
-			return { error: 'This email already has a pending invitation' }
+			return { error: 'This phone already has a pending invitation' }
 		}
 		if (existingInvite.status === 'accepted') {
 			return { error: 'This person is already a worker' }
@@ -113,7 +113,7 @@ export async function inviteWorker(
 	const { data: existingProfile } = await supabase
 		.from('profiles')
 		.select('id')
-		.eq('email', email)
+		.eq('phone', phone)
 		.single()
 
 	if (existingProfile) {
@@ -141,7 +141,7 @@ export async function inviteWorker(
 
 		await supabase.from('worker_invitations').insert({
 			business_id: businessId,
-			email,
+			phone,
 			display_name: data.display_name.trim(),
 			bio: data.bio.trim() || null,
 			specialties: data.specialties.length > 0 ? data.specialties : null,
@@ -167,7 +167,7 @@ export async function inviteWorker(
 	// User doesn't exist — create pending invitation
 	const { error: inviteError } = await supabase.from('worker_invitations').insert({
 		business_id: businessId,
-		email,
+		phone,
 		display_name: data.display_name.trim(),
 		bio: data.bio.trim() || null,
 		specialties: data.specialties.length > 0 ? data.specialties : null,
@@ -246,16 +246,16 @@ export async function respondToInvitation(invitationId: string, accept: boolean)
 	const { supabase, user } = await getAuthUser()
 	if (!user) return { error: 'Not authenticated' }
 
-	// Get user email
-	const { data: profile } = await supabase.from('profiles').select('email').eq('id', user.id).single()
+	// Get user phone
+	const { data: profile } = await supabase.from('profiles').select('phone').eq('id', user.id).single()
 	if (!profile) return { error: 'Profile not found' }
 
-	// Verify invitation belongs to this user's email
+	// Verify invitation belongs to this user's phone
 	const { data: invitation } = await supabase
 		.from('worker_invitations')
 		.select('id, business_id, display_name, bio, specialties, invited_by, status')
 		.eq('id', invitationId)
-		.eq('email', profile.email)
+		.eq('phone', profile.phone)
 		.single()
 
 	if (!invitation) return { error: 'Invitation not found' }

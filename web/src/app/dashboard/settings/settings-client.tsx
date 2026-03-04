@@ -13,17 +13,26 @@ import type { Business, Profile, UserRole } from '@/lib/types'
 import { Loader2, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { updateBusinessSettings, updateProfile } from './actions'
+import { updateBusinessSettings, updateNotificationPreferences, updateProfile } from './actions'
+
+interface NotificationPrefs {
+	sms_enabled: boolean
+	push_enabled: boolean
+	reminder_enabled: boolean
+}
 
 interface Props {
 	profile: Profile
 	role: UserRole
 	business: Pick<Business, 'id' | 'cancellation_policy' | 'cancellation_hours' | 'auto_confirm' | 'buffer_minutes'> | null
+	notificationPrefs: NotificationPrefs
 }
 
-export function SettingsClient({ profile, role, business }: Props) {
+export function SettingsClient({ profile, role, business, notificationPrefs }: Props) {
 	const [savingProfile, setSavingProfile] = useState(false)
 	const [savingBusiness, setSavingBusiness] = useState(false)
+	const [savingNotifs, setSavingNotifs] = useState(false)
+	const [notifForm, setNotifForm] = useState<NotificationPrefs>(notificationPrefs)
 
 	const [profileForm, setProfileForm] = useState({
 		full_name: profile.full_name,
@@ -60,6 +69,18 @@ export function SettingsClient({ profile, role, business }: Props) {
 		}
 	}
 
+	async function handleToggleNotif(key: keyof NotificationPrefs, value: boolean) {
+		const updated = { ...notifForm, [key]: value }
+		setNotifForm(updated)
+		setSavingNotifs(true)
+		const result = await updateNotificationPreferences(updated)
+		setSavingNotifs(false)
+		if (result.error) {
+			setNotifForm(notifForm)
+			toast.error(result.error)
+		}
+	}
+
 	return (
 		<div className="space-y-6">
 			<div>
@@ -75,6 +96,7 @@ export function SettingsClient({ profile, role, business }: Props) {
 					{role === 'business_owner' && (
 						<TabsTrigger value="business">Business</TabsTrigger>
 					)}
+					<TabsTrigger value="notifications">Notifications</TabsTrigger>
 					<TabsTrigger value="account">Account</TabsTrigger>
 				</TabsList>
 
@@ -179,6 +201,52 @@ export function SettingsClient({ profile, role, business }: Props) {
 						</Card>
 					</TabsContent>
 				)}
+
+				{/* Notifications Tab */}
+				<TabsContent value="notifications" className="space-y-4 mt-6">
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-lg">Notification Channels</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="flex items-center justify-between rounded-lg border p-4">
+								<div>
+									<p className="text-sm font-medium">SMS notifications</p>
+									<p className="text-xs text-muted-foreground">Receive booking updates via text message</p>
+								</div>
+								<Switch
+									checked={notifForm.sms_enabled}
+									onCheckedChange={(checked) => handleToggleNotif('sms_enabled', checked)}
+									disabled={savingNotifs}
+								/>
+							</div>
+
+							<div className="flex items-center justify-between rounded-lg border p-4">
+								<div>
+									<p className="text-sm font-medium">Push notifications</p>
+									<p className="text-xs text-muted-foreground">Receive push notifications on your mobile device</p>
+								</div>
+								<Switch
+									checked={notifForm.push_enabled}
+									onCheckedChange={(checked) => handleToggleNotif('push_enabled', checked)}
+									disabled={savingNotifs}
+								/>
+							</div>
+
+							<div className="flex items-center justify-between rounded-lg border p-4">
+								<div>
+									<p className="text-sm font-medium">Booking reminders</p>
+									<p className="text-xs text-muted-foreground">Get reminded about upcoming appointments 24 hours before</p>
+								</div>
+								<Switch
+									checked={notifForm.reminder_enabled}
+									onCheckedChange={(checked) => handleToggleNotif('reminder_enabled', checked)}
+									disabled={savingNotifs}
+								/>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
 
 				{/* Account Tab */}
 				<TabsContent value="account" className="space-y-4 mt-6">

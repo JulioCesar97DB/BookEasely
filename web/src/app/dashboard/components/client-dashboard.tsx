@@ -14,11 +14,11 @@ export async function ClientDashboard({ firstName, userId }: { firstName: string
 	const today = new Date().toISOString().split('T')[0]!
 
 	// Check for pending worker invitations
-	const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single()
+	const { data: profile } = await supabase.from('profiles').select('phone').eq('id', userId).single()
 	const { data: pendingInvitations } = await supabase
 		.from('worker_invitations')
 		.select('id, business_id, display_name, businesses(name)')
-		.eq('email', profile?.email ?? '')
+		.eq('phone', profile?.phone ?? '')
 		.eq('status', 'pending')
 
 	const [upcomingBookings, completedBookings, favoritesCount] = await Promise.all([

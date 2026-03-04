@@ -28,6 +28,31 @@ export async function updateProfile(data: { full_name: string; phone: string }) 
 	return { success: true }
 }
 
+export async function updateNotificationPreferences(data: {
+	sms_enabled: boolean
+	push_enabled: boolean
+	reminder_enabled: boolean
+}) {
+	const supabase = await createClient()
+	const { data: { user } } = await supabase.auth.getUser()
+	if (!user) return { error: 'Not authenticated' }
+
+	const { error } = await supabase
+		.from('notification_preferences')
+		.upsert({
+			user_id: user.id,
+			sms_enabled: data.sms_enabled,
+			push_enabled: data.push_enabled,
+			reminder_enabled: data.reminder_enabled,
+			updated_at: new Date().toISOString(),
+		}, { onConflict: 'user_id' })
+
+	if (error) return { error: error.message }
+
+	revalidatePath('/dashboard/settings')
+	return { success: true }
+}
+
 export async function updateBusinessSettings(
 	businessId: string,
 	data: Record<string, unknown>

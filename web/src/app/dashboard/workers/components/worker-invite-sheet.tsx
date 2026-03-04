@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Loader2 } from 'lucide-react'
 
 export interface InviteFormState {
-	email: string
+	phone: string
 	display_name: string
 	bio: string
 	specialties: string
@@ -37,18 +37,18 @@ export function WorkerInviteSheet({
 				<SheetHeader>
 					<SheetTitle>Invite Worker</SheetTitle>
 					<SheetDescription>
-						Invite a team member by email. If they already have an account, they&apos;ll be added instantly. Otherwise, they&apos;ll be linked when they sign up.
+						Invite a team member by phone. If they already have an account, they&apos;ll be added instantly. Otherwise, they&apos;ll be linked when they sign up.
 					</SheetDescription>
 				</SheetHeader>
 
 				<div className="mt-6 space-y-6">
 					<div className="space-y-2">
-						<Label>Email</Label>
+						<Label>Phone number</Label>
 						<Input
-							type="email"
-							value={form.email}
-							onChange={(e) => onFormChange((p) => ({ ...p, email: e.target.value }))}
-							placeholder="worker@example.com"
+							type="tel"
+							value={form.phone}
+							onChange={(e) => onFormChange((p) => ({ ...p, phone: e.target.value }))}
+							placeholder="+1 (555) 000-0000"
 						/>
 					</div>
 

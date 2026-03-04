@@ -28,12 +28,12 @@ export async function WorkerDashboard({ firstName, userId }: { firstName: string
 	const workerRecords = typedQuery<WorkerWithBusiness[]>(rawWorkerRecords ?? [])
 	const workerIds = workerRecords.map((w) => w.id)
 
-	// Get user email for invitation lookup
-	const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).single()
+	// Get user phone for invitation lookup
+	const { data: profile } = await supabase.from('profiles').select('phone').eq('id', userId).single()
 	const { data: pendingInvitations } = await supabase
 		.from('worker_invitations')
 		.select('id, business_id, display_name, businesses(name)')
-		.eq('email', profile?.email ?? '')
+		.eq('phone', profile?.phone ?? '')
 		.eq('status', 'pending')
 
 	const { today, nextWeek } = getDateStrings()

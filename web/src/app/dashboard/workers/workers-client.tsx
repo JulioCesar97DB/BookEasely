@@ -32,7 +32,7 @@ const emptyWorkerForm: WorkerFormState = {
 }
 
 const emptyInviteForm: InviteFormState = {
-	email: '',
+	phone: '',
 	display_name: '',
 	bio: '',
 	specialties: '',
@@ -114,8 +114,8 @@ export function WorkersClient({
 	}
 
 	async function handleInvite() {
-		if (!inviteForm.email.trim()) {
-			toast.error('Email is required')
+		if (!inviteForm.phone.trim()) {
+			toast.error('Phone number is required')
 			return
 		}
 		if (!inviteForm.display_name.trim()) {
@@ -125,7 +125,7 @@ export function WorkersClient({
 
 		setSaving(true)
 		const result = await inviteWorker(businessId, {
-			email: inviteForm.email.trim(),
+			phone: inviteForm.phone.trim(),
 			display_name: inviteForm.display_name.trim(),
 			bio: inviteForm.bio.trim(),
 			specialties: inviteForm.specialties
@@ -185,7 +185,7 @@ export function WorkersClient({
 						</div>
 						<h3 className="mt-4 text-lg font-semibold">No team members yet</h3>
 						<p className="mt-1 max-w-sm text-sm text-muted-foreground">
-							Add yourself as a worker or invite team members by email.
+							Add yourself as a worker or invite team members by phone.
 						</p>
 						<div className="mt-6 flex gap-3">
 							<Button variant="outline" onClick={openAddSelf} className="gap-2">
@@ -233,7 +233,7 @@ export function WorkersClient({
 												</div>
 												<div>
 													<p className="text-sm font-medium">{inv.display_name}</p>
-													<p className="text-xs text-muted-foreground">{inv.email}</p>
+													<p className="text-xs text-muted-foreground">{inv.phone}</p>
 												</div>
 											</div>
 											<div className="flex items-center gap-3">

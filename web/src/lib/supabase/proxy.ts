@@ -5,10 +5,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 const publicRoutes = ['/', '/search', '/business']
 
 // Auth routes — logged-in users get redirected to /dashboard
-const authRoutes = ['/auth/login', '/auth/signup', '/auth/reset-password']
+const authRoutes = ['/auth/login', '/auth/signup']
 
 // Auth routes accessible regardless of auth state
-const openAuthRoutes = ['/auth/verify', '/auth/update-password', '/auth/callback']
+const openAuthRoutes = ['/auth/verify', '/auth/callback']
 
 function isPublicRoute(pathname: string) {
 	// Exact match for root
@@ -57,12 +57,12 @@ export async function updateSession(request: NextRequest) {
 
 	const { pathname } = request.nextUrl
 
-	// Open auth routes (verify, update-password, callback) — always accessible
+	// Open auth routes (verify, callback) — always accessible
 	if (isOpenAuthRoute(pathname)) {
 		return supabaseResponse
 	}
 
-	// Auth routes (login, signup, reset) — redirect logged-in users to discover
+	// Auth routes (login, signup) — redirect logged-in users to discover
 	if (isAuthRoute(pathname)) {
 		if (user) {
 			return redirectWithCookies(request, '/dashboard/discover', supabaseResponse)

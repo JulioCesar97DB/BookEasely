@@ -9,15 +9,27 @@ export default async function SettingsPage() {
 
 	if (!profile) redirect('/onboarding')
 
-	let business = null
-	if (role === 'business_owner') {
-		const supabase = await createClient()
-		const { data } = await supabase
-			.from('businesses')
-			.select('id, cancellation_policy, cancellation_hours, auto_confirm, buffer_minutes')
-			.eq('owner_id', profile.id)
-			.single()
-		business = data
+	const supabase = await createClient()
+
+	const [businessResult, prefsResult] = await Promise.all([
+		role === 'business_owner'
+			? supabase
+				.from('businesses')
+				.select('id, cancellation_policy, cancellation_hours, auto_confirm, buffer_minutes')
+				.eq('owner_id', profile.id)
+				.single()
+			: Promise.resolve({ data: null }),
+		supabase
+			.from('notification_preferences')
+			.select('sms_enabled, push_enabled, reminder_enabled')
+			.eq('user_id', profile.id)
+			.single(),
+	])
+
+	const notificationPrefs = prefsResult.data ?? {
+		sms_enabled: true,
+		push_enabled: true,
+		reminder_enabled: true,
 	}
 
 	return (
@@ -25,7 +37,8 @@ export default async function SettingsPage() {
 			<SettingsClient
 				profile={profile}
 				role={role}
-				business={business}
+				business={businessResult.data}
+				notificationPrefs={notificationPrefs}
 			/>
 		</PageTransition>
 	)
