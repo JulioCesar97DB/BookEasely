@@ -42,5 +42,27 @@ export async function updateBookingStatus(bookingId: string, status: string) {
 	if (error) return { error: error.message }
 
 	revalidatePath('/dashboard/bookings')
+	revalidatePath('/dashboard/calendar')
 	return { success: true }
+}
+
+export async function getBookingsForRange(businessId: string, startDate: string, endDate: string) {
+	if (!uuid.safeParse(businessId).success) return { error: 'Invalid business ID', data: null }
+
+	const supabase = await createClient()
+	const { data: { user } } = await supabase.auth.getUser()
+	if (!user) return { error: 'Not authenticated', data: null }
+
+	const { data, error } = await supabase
+		.from('bookings')
+		.select('id, date, start_time, end_time, status, note, cancellation_reason, business_id, service_id, worker_id, services(name, duration_minutes, price), workers(id, display_name), profiles!bookings_client_id_fkey(full_name, phone)')
+		.eq('business_id', businessId)
+		.gte('date', startDate)
+		.lte('date', endDate)
+		.in('status', ['pending', 'confirmed', 'completed', 'cancelled'])
+		.order('date')
+		.order('start_time')
+
+	if (error) return { error: error.message, data: null }
+	return { error: null, data }
 }

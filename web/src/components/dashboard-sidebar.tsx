@@ -12,6 +12,7 @@ import {
 	Bell,
 	Calendar,
 	CalendarCheck,
+	CalendarDays,
 	ChevronsLeft,
 	ChevronsRight,
 	ClipboardList,
@@ -53,6 +54,7 @@ export const workerNav: NavItem[] = [
 
 export const businessNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+	{ label: 'Calendar', href: '/dashboard/calendar', icon: CalendarDays },
 	{ label: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
 	{ label: 'Schedule', href: '/dashboard/schedule', icon: Clock },
 	{ label: 'Services', href: '/dashboard/services', icon: ClipboardList },

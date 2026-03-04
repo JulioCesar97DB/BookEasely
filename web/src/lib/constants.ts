@@ -41,6 +41,9 @@ export const DURATION_OPTIONS = [
 
 export const SCHEDULE_HOURS = Array.from({ length: 11 }, (_, i) => i + 7) as number[]
 
+export const CALENDAR_HOURS = Array.from({ length: 15 }, (_, i) => i + 6) as number[] // 6 AM to 8 PM
+export const HALF_HOUR_HEIGHT = 40 // pixels per 30-min slot
+
 export const SCHEDULE_CHART_COLORS = [
 	{ bg: 'bg-chart-1', text: 'text-chart-1' },
 	{ bg: 'bg-chart-2', text: 'text-chart-2' },
