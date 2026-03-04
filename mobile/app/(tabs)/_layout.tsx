@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../lib/auth-context'
+import { registerForPushNotifications } from '../../lib/push-notifications'
 import { supabase } from '../../lib/supabase'
 import { colors } from '../../lib/theme'
 
@@ -11,12 +12,18 @@ export default function TabsLayout() {
 		user?.user_metadata?.role === 'business_owner'
 	const [isWorker, setIsWorker] = useState(false)
 	const [unreadCount, setUnreadCount] = useState(0)
+	const pushRegistered = useRef(false)
 
 	useEffect(() => {
 		if (!user) {
 			setIsWorker(false)
 			setUnreadCount(0)
+			pushRegistered.current = false
 			return
+		}
+		if (!pushRegistered.current) {
+			pushRegistered.current = true
+			registerForPushNotifications(user.id)
 		}
 		async function checkWorkerStatus() {
 			const { count } = await supabase

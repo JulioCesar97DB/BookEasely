@@ -26,7 +26,7 @@ export default function AddWorkerScreen() {
 	const [saving, setSaving] = useState(false)
 	const [loadingWorker, setLoadingWorker] = useState(isEditMode)
 	const [form, setForm] = useState({
-		email: '',
+		phone: '',
 		display_name: '',
 		bio: '',
 		specialties: '',
@@ -48,7 +48,7 @@ export default function AddWorkerScreen() {
 				.single()
 			if (worker) {
 				setForm({
-					email: '',
+					phone: '',
 					display_name: worker.display_name ?? '',
 					bio: worker.bio ?? '',
 					specialties: worker.specialties?.join(', ') ?? '',
@@ -95,27 +95,27 @@ export default function AddWorkerScreen() {
 			return
 		}
 
-		// Invite flow — email is required
-		if (!form.email.trim()) {
+		// Invite flow — phone is required
+		if (!form.phone.trim()) {
 			setSaving(false)
-			Alert.alert('Error', 'Email is required')
+			Alert.alert('Error', 'Phone number is required')
 			return
 		}
 
-		const email = form.email.trim().toLowerCase()
+		const phone = form.phone.trim()
 
 		// Check if already invited
 		const { data: existingInvite } = await supabase
 			.from('worker_invitations')
 			.select('id, status')
-			.eq('email', email)
+			.eq('phone', phone)
 			.eq('business_id', businessId)
 			.single()
 
 		if (existingInvite) {
 			setSaving(false)
 			if (existingInvite.status === 'pending') {
-				Alert.alert('Error', 'This email already has a pending invitation')
+				Alert.alert('Error', 'This phone already has a pending invitation')
 				return
 			}
 			if (existingInvite.status === 'accepted') {
@@ -128,7 +128,7 @@ export default function AddWorkerScreen() {
 		const { data: existingProfile } = await supabase
 			.from('profiles')
 			.select('id')
-			.eq('email', email)
+			.eq('phone', phone)
 			.single()
 
 		if (existingProfile) {
@@ -165,7 +165,7 @@ export default function AddWorkerScreen() {
 			// Record accepted invitation
 			await supabase.from('worker_invitations').insert({
 				business_id: businessId,
-				email,
+				phone,
 				display_name: form.display_name.trim(),
 				bio: form.bio.trim() || null,
 				specialties: specialties.length > 0 ? specialties : null,
@@ -192,7 +192,7 @@ export default function AddWorkerScreen() {
 			// User doesn't exist — create pending invitation
 			const { error: inviteError } = await supabase.from('worker_invitations').insert({
 				business_id: businessId,
-				email,
+				phone,
 				display_name: form.display_name.trim(),
 				bio: form.bio.trim() || null,
 				specialties: specialties.length > 0 ? specialties : null,
@@ -234,14 +234,14 @@ export default function AddWorkerScreen() {
 			>
 				{!isEditMode && (
 					<View style={styles.field}>
-						<Text style={styles.label}>Email</Text>
+						<Text style={styles.label}>Phone number</Text>
 						<TextInput
 							style={styles.input}
-							value={form.email}
-							onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
-							placeholder="worker@example.com"
+							value={form.phone}
+							onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
+							placeholder="+1 (555) 000-0000"
 							placeholderTextColor={colors.foregroundSecondary}
-							keyboardType="email-address"
+							keyboardType="phone-pad"
 							autoCapitalize="none"
 							autoCorrect={false}
 						/>

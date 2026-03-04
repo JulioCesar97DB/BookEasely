@@ -11,10 +11,9 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-	signIn: (email: string, password: string) => Promise<{ error: string | null }>
-	signUp: (email: string, password: string, metadata: Record<string, string>) => Promise<{ error: string | null }>
+	sendOtp: (phone: string, metadata?: Record<string, string>) => Promise<{ error: string | null }>
+	verifyOtp: (phone: string, token: string) => Promise<{ error: string | null }>
 	signOut: () => Promise<void>
-	resetPassword: (email: string) => Promise<{ error: string | null }>
 	refreshProfile: () => Promise<void>
 }
 
@@ -26,7 +25,7 @@ function buildFallbackProfile(user: User): Profile {
 		id: user.id,
 		email: user.email ?? '',
 		full_name: meta.full_name ?? '',
-		phone: meta.phone ?? '',
+		phone: user.phone ?? meta.phone ?? '',
 		role: (meta.role ?? 'client') as UserRole,
 		avatar_url: null,
 		onboarding_completed: false,
@@ -98,20 +97,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		return () => subscription.unsubscribe()
 	}, [])
 
-	async function signIn(email: string, password: string) {
-		const { error } = await supabase.auth.signInWithPassword({ email, password })
+	async function sendOtp(phone: string, metadata?: Record<string, string>) {
+		const { error } = await supabase.auth.signInWithOtp({
+			phone,
+			options: metadata ? { data: metadata } : undefined,
+		})
 		return { error: error?.message ?? null }
 	}
 
-	async function signUp(
-		email: string,
-		password: string,
-		metadata: Record<string, string>
-	) {
-		const { error } = await supabase.auth.signUp({
-			email,
-			password,
-			options: { data: metadata },
+	async function verifyOtp(phone: string, token: string) {
+		const { error } = await supabase.auth.verifyOtp({
+			phone,
+			token,
+			type: 'sms',
 		})
 		return { error: error?.message ?? null }
 	}
@@ -120,19 +118,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		await supabase.auth.signOut()
 	}
 
-	async function resetPassword(email: string) {
-		const { error } = await supabase.auth.resetPasswordForEmail(email)
-		return { error: error?.message ?? null }
-	}
-
 	return (
 		<AuthContext.Provider
 			value={{
 				...state,
-				signIn,
-				signUp,
+				sendOtp,
+				verifyOtp,
 				signOut,
-				resetPassword,
 				refreshProfile,
 			}}
 		>

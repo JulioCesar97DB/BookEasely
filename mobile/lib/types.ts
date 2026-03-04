@@ -163,7 +163,7 @@ export interface Favorite {
 export interface WorkerInvitation {
 	id: string
 	business_id: string
-	email: string
+	phone: string
 	display_name: string
 	bio: string | null
 	specialties: string[] | null

@@ -116,8 +116,8 @@ export default function ProfileScreen() {
 					)}
 					<MenuItem
 						icon="notifications-outline"
-						label="Notifications"
-						onPress={() => router.push('/(tabs)/bookings' as `/${string}`)}
+						label="Notification Settings"
+						onPress={() => router.push('/(tabs)/profile/notification-settings' as `/${string}`)}
 					/>
 				</View>
 

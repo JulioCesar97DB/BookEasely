@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
 	ActivityIndicator,
 	KeyboardAvoidingView,
@@ -12,53 +12,87 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native'
+import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated'
 import { useAuth } from '../../lib/auth-context'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 
 export default function SignUpScreen() {
-	const { signUp } = useAuth()
+	const { sendOtp, verifyOtp } = useAuth()
+	const [step, setStep] = useState<'info' | 'otp'>('info')
 	const [fullName, setFullName] = useState('')
-	const [email, setEmail] = useState('')
 	const [phone, setPhone] = useState('')
-	const [password, setPassword] = useState('')
-	const [confirmPassword, setConfirmPassword] = useState('')
 	const [role, setRole] = useState<'client' | 'business_owner'>('client')
-	const [showPassword, setShowPassword] = useState(false)
+	const [otpCode, setOtpCode] = useState('')
 	const [error, setError] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
+	const [countdown, setCountdown] = useState(0)
+	const otpInputRef = useRef<TextInput>(null)
 
-	async function handleSignUp() {
-		if (!fullName.trim() || !email.trim() || !phone.trim() || !password) {
-			setError('Please fill in all fields')
+	useEffect(() => {
+		if (countdown <= 0) return
+		const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+		return () => clearTimeout(timer)
+	}, [countdown])
+
+	useEffect(() => {
+		if (step === 'otp') {
+			setTimeout(() => otpInputRef.current?.focus(), 300)
+		}
+	}, [step])
+
+	async function handleSendCode() {
+		if (!fullName.trim()) {
+			setError('Please enter your name')
 			return
 		}
-		if (phone.trim().length < 10) {
+		if (!phone.trim() || phone.trim().length < 10) {
 			setError('Please enter a valid phone number')
 			return
 		}
-		if (password.length < 8) {
-			setError('Password must be at least 8 characters')
-			return
-		}
-		if (password !== confirmPassword) {
-			setError('Passwords do not match')
-			return
-		}
-
 		setError(null)
 		setIsLoading(true)
-		const result = await signUp(email.trim(), password, {
+		const result = await sendOtp(phone.trim(), {
 			full_name: fullName.trim(),
-			phone: phone.trim(),
 			role,
 		})
+		setIsLoading(false)
+		if (result.error) {
+			setError(result.error)
+			return
+		}
+		setStep('otp')
+		setCountdown(60)
+	}
+
+	async function handleVerifyCode() {
+		if (otpCode.length !== 6) {
+			setError('Please enter the 6-digit code')
+			return
+		}
+		setError(null)
+		setIsLoading(true)
+		const result = await verifyOtp(phone.trim(), otpCode)
 		if (result.error) {
 			setError(result.error)
 			setIsLoading(false)
 		} else {
-			router.replace('/(auth)/verify')
+			router.replace('/')
 		}
 	}
+
+	const handleResend = useCallback(async () => {
+		if (countdown > 0) return
+		setError(null)
+		const result = await sendOtp(phone.trim(), {
+			full_name: fullName.trim(),
+			role,
+		})
+		if (result.error) {
+			setError(result.error)
+			return
+		}
+		setCountdown(60)
+	}, [countdown, phone, fullName, role, sendOtp])
 
 	return (
 		<KeyboardAvoidingView
@@ -78,151 +112,175 @@ export default function SignUpScreen() {
 					<Text style={styles.logoText}>BookEasely</Text>
 				</View>
 
-				<Text style={styles.title}>Create an account</Text>
-				<Text style={styles.subtitle}>Get started with BookEasely today</Text>
+				{step === 'info' ? (
+					<Animated.View entering={FadeIn.duration(300)}>
+						<Text style={styles.title}>Create an account</Text>
+						<Text style={styles.subtitle}>Get started with BookEasely today</Text>
 
-				{error && (
-					<View style={styles.errorBox}>
-						<Text style={styles.errorText}>{error}</Text>
-					</View>
-				)}
+						{error && (
+							<Animated.View entering={FadeInDown.duration(200)} style={styles.errorBox}>
+								<Text style={styles.errorText}>{error}</Text>
+							</Animated.View>
+						)}
 
-				{/* Role selector */}
-				<View style={styles.roleContainer}>
-					<Text style={styles.label}>I want to</Text>
-					<View style={styles.roleRow}>
-						<TouchableOpacity
-							style={[styles.roleCard, role === 'client' && styles.roleCardActive]}
-							onPress={() => setRole('client')}
-							activeOpacity={0.7}
-						>
-							<Ionicons
-								name="person-outline"
-								size={20}
-								color={role === 'client' ? colors.primary : colors.foregroundSecondary}
-							/>
-							<Text style={[styles.roleText, role === 'client' && styles.roleTextActive]}>
-								Book services
-							</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							style={[styles.roleCard, role === 'business_owner' && styles.roleCardActive]}
-							onPress={() => setRole('business_owner')}
-							activeOpacity={0.7}
-						>
-							<Ionicons
-								name="briefcase-outline"
-								size={20}
-								color={role === 'business_owner' ? colors.primary : colors.foregroundSecondary}
-							/>
-							<Text style={[styles.roleText, role === 'business_owner' && styles.roleTextActive]}>
-								List my business
-							</Text>
-						</TouchableOpacity>
-					</View>
-				</View>
+						{/* Role selector */}
+						<View style={styles.roleContainer}>
+							<Text style={styles.label}>I want to</Text>
+							<View style={styles.roleRow}>
+								<TouchableOpacity
+									style={[styles.roleCard, role === 'client' && styles.roleCardActive]}
+									onPress={() => setRole('client')}
+									activeOpacity={0.7}
+								>
+									<Ionicons
+										name="person-outline"
+										size={20}
+										color={role === 'client' ? colors.primary : colors.foregroundSecondary}
+									/>
+									<Text style={[styles.roleText, role === 'client' && styles.roleTextActive]}>
+										Book services
+									</Text>
+								</TouchableOpacity>
+								<TouchableOpacity
+									style={[styles.roleCard, role === 'business_owner' && styles.roleCardActive]}
+									onPress={() => setRole('business_owner')}
+									activeOpacity={0.7}
+								>
+									<Ionicons
+										name="briefcase-outline"
+										size={20}
+										color={role === 'business_owner' ? colors.primary : colors.foregroundSecondary}
+									/>
+									<Text style={[styles.roleText, role === 'business_owner' && styles.roleTextActive]}>
+										List my business
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</View>
 
-				{/* Form */}
-				<View style={styles.form}>
-					<View style={styles.field}>
-						<Text style={styles.label}>Full name</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="John Doe"
-							placeholderTextColor={colors.foregroundSecondary}
-							value={fullName}
-							onChangeText={setFullName}
-							autoComplete="name"
-						/>
-					</View>
-
-					<View style={styles.field}>
-						<Text style={styles.label}>Email</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="you@example.com"
-							placeholderTextColor={colors.foregroundSecondary}
-							value={email}
-							onChangeText={setEmail}
-							keyboardType="email-address"
-							autoCapitalize="none"
-							autoComplete="email"
-						/>
-					</View>
-
-					<View style={styles.field}>
-						<Text style={styles.label}>Phone number</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="+1 (555) 000-0000"
-							placeholderTextColor={colors.foregroundSecondary}
-							value={phone}
-							onChangeText={setPhone}
-							keyboardType="phone-pad"
-							autoComplete="tel"
-						/>
-					</View>
-
-					<View style={styles.field}>
-						<Text style={styles.label}>Password</Text>
-						<View style={styles.passwordContainer}>
-							<TextInput
-								style={[styles.input, styles.passwordInput]}
-								placeholder="At least 8 characters"
-								placeholderTextColor={colors.foregroundSecondary}
-								value={password}
-								onChangeText={setPassword}
-								secureTextEntry={!showPassword}
-								autoComplete="new-password"
-							/>
-							<TouchableOpacity
-								style={styles.eyeButton}
-								onPress={() => setShowPassword(!showPassword)}
-							>
-								<Ionicons
-									name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-									size={20}
-									color={colors.foregroundSecondary}
+						<View style={styles.form}>
+							<View style={styles.field}>
+								<Text style={styles.label}>Full name</Text>
+								<TextInput
+									style={styles.input}
+									placeholder="John Doe"
+									placeholderTextColor={colors.foregroundSecondary}
+									value={fullName}
+									onChangeText={setFullName}
+									autoComplete="name"
 								/>
+							</View>
+
+							<View style={styles.field}>
+								<Text style={styles.label}>Phone number</Text>
+								<View style={styles.phoneInputContainer}>
+									<Ionicons name="call-outline" size={18} color={colors.foregroundSecondary} style={styles.phoneIcon} />
+									<TextInput
+										style={[styles.input, styles.phoneInput]}
+										placeholder="+1 (555) 000-0000"
+										placeholderTextColor={colors.foregroundSecondary}
+										value={phone}
+										onChangeText={setPhone}
+										keyboardType="phone-pad"
+										autoComplete="tel"
+									/>
+								</View>
+							</View>
+
+							<TouchableOpacity
+								style={[styles.button, isLoading && styles.buttonDisabled]}
+								onPress={handleSendCode}
+								disabled={isLoading}
+								activeOpacity={0.8}
+							>
+								{isLoading ? (
+									<ActivityIndicator color={colors.white} size="small" />
+								) : (
+									<Text style={styles.buttonText}>Send Code</Text>
+								)}
 							</TouchableOpacity>
 						</View>
-					</View>
 
-					<View style={styles.field}>
-						<Text style={styles.label}>Confirm password</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="Re-enter your password"
-							placeholderTextColor={colors.foregroundSecondary}
-							value={confirmPassword}
-							onChangeText={setConfirmPassword}
-							secureTextEntry={!showPassword}
-							autoComplete="new-password"
-						/>
-					</View>
-
-					<TouchableOpacity
-						style={[styles.button, isLoading && styles.buttonDisabled]}
-						onPress={handleSignUp}
-						disabled={isLoading}
-						activeOpacity={0.8}
-					>
-						{isLoading ? (
-							<ActivityIndicator color={colors.white} size="small" />
-						) : (
-							<Text style={styles.buttonText}>Create account</Text>
-						)}
-					</TouchableOpacity>
-				</View>
-
-				<View style={styles.footer}>
-					<Text style={styles.footerText}>Already have an account? </Text>
-					<Link href="/(auth)/login" asChild>
-						<TouchableOpacity>
-							<Text style={styles.footerLink}>Sign in</Text>
+						<View style={styles.footer}>
+							<Text style={styles.footerText}>Already have an account? </Text>
+							<Link href="/(auth)/login" asChild>
+								<TouchableOpacity>
+									<Text style={styles.footerLink}>Sign in</Text>
+								</TouchableOpacity>
+							</Link>
+						</View>
+					</Animated.View>
+				) : (
+					<Animated.View entering={FadeInRight.duration(300)}>
+						<TouchableOpacity
+							style={styles.backButton}
+							onPress={() => { setStep('info'); setError(null); setOtpCode('') }}
+							activeOpacity={0.7}
+						>
+							<Ionicons name="arrow-back" size={18} color={colors.foregroundSecondary} />
+							<Text style={styles.backText}>Back</Text>
 						</TouchableOpacity>
-					</Link>
-				</View>
+
+						<View style={styles.otpHeader}>
+							<Animated.View entering={FadeIn.delay(100).duration(300)} style={styles.shieldCircle}>
+								<Ionicons name="shield-checkmark-outline" size={32} color={colors.primary} />
+							</Animated.View>
+							<Text style={styles.title}>Verify your phone</Text>
+							<Text style={styles.subtitle}>
+								We sent a 6-digit code to{' '}
+								<Text style={styles.phoneHighlight}>{phone}</Text>
+							</Text>
+						</View>
+
+						{error && (
+							<Animated.View entering={FadeInDown.duration(200)} style={styles.errorBox}>
+								<Text style={styles.errorText}>{error}</Text>
+							</Animated.View>
+						)}
+
+						<View style={styles.form}>
+							<View style={styles.field}>
+								<Text style={styles.label}>Verification code</Text>
+								<TextInput
+									ref={otpInputRef}
+									style={[styles.input, styles.otpInput]}
+									placeholder="000000"
+									placeholderTextColor={colors.foregroundSecondary}
+									value={otpCode}
+									onChangeText={(text) => setOtpCode(text.replace(/\D/g, '').slice(0, 6))}
+									keyboardType="number-pad"
+									maxLength={6}
+									autoComplete="one-time-code"
+								/>
+							</View>
+
+							<TouchableOpacity
+								style={[styles.button, isLoading && styles.buttonDisabled]}
+								onPress={handleVerifyCode}
+								disabled={isLoading}
+								activeOpacity={0.8}
+							>
+								{isLoading ? (
+									<ActivityIndicator color={colors.white} size="small" />
+								) : (
+									<Text style={styles.buttonText}>Verify & Create Account</Text>
+								)}
+							</TouchableOpacity>
+						</View>
+
+						<View style={styles.resendContainer}>
+							{countdown > 0 ? (
+								<Text style={styles.resendText}>
+									Resend code in <Text style={styles.countdownText}>{countdown}s</Text>
+								</Text>
+							) : (
+								<TouchableOpacity onPress={handleResend} activeOpacity={0.7}>
+									<Text style={styles.resendLink}>Resend code</Text>
+								</TouchableOpacity>
+							)}
+						</View>
+					</Animated.View>
+				)}
 			</ScrollView>
 		</KeyboardAvoidingView>
 	)
@@ -335,20 +393,23 @@ const styles = StyleSheet.create({
 		color: colors.foreground,
 		backgroundColor: colors.surface,
 	},
-	passwordContainer: {
+	phoneInputContainer: {
 		position: 'relative',
 	},
-	passwordInput: {
-		paddingRight: 48,
-	},
-	eyeButton: {
+	phoneIcon: {
 		position: 'absolute',
-		right: 0,
-		top: 0,
-		height: 48,
-		width: 48,
-		justifyContent: 'center',
-		alignItems: 'center',
+		left: spacing.lg,
+		top: 14,
+		zIndex: 1,
+	},
+	phoneInput: {
+		paddingLeft: spacing.lg + 26,
+	},
+	otpInput: {
+		textAlign: 'center',
+		fontSize: fontSize['2xl'],
+		letterSpacing: 12,
+		fontVariant: ['tabular-nums'],
 	},
 	button: {
 		height: 48,
@@ -376,6 +437,50 @@ const styles = StyleSheet.create({
 		color: colors.foregroundSecondary,
 	},
 	footerLink: {
+		fontSize: fontSize.sm,
+		fontWeight: '600',
+		color: colors.primary,
+	},
+	backButton: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: spacing.xs,
+		marginBottom: spacing.lg,
+	},
+	backText: {
+		fontSize: fontSize.sm,
+		color: colors.foregroundSecondary,
+	},
+	otpHeader: {
+		alignItems: 'center',
+		marginBottom: spacing.lg,
+	},
+	shieldCircle: {
+		width: 64,
+		height: 64,
+		borderRadius: 32,
+		backgroundColor: colors.primaryLight,
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginBottom: spacing.lg,
+	},
+	phoneHighlight: {
+		fontWeight: '600',
+		color: colors.foreground,
+	},
+	resendContainer: {
+		alignItems: 'center',
+		marginTop: spacing['2xl'],
+	},
+	resendText: {
+		fontSize: fontSize.sm,
+		color: colors.foregroundSecondary,
+	},
+	countdownText: {
+		fontWeight: '600',
+		color: colors.foreground,
+	},
+	resendLink: {
 		fontSize: fontSize.sm,
 		fontWeight: '600',
 		color: colors.primary,

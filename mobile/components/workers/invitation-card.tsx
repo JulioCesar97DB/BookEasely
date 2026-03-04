@@ -17,7 +17,7 @@ export const InvitationCard = React.memo(function InvitationCard({ invitation, o
 			</View>
 			<View style={styles.invitationBody}>
 				<Text style={styles.invitationName}>{invitation.display_name}</Text>
-				<Text style={styles.invitationEmail}>{invitation.email}</Text>
+				<Text style={styles.invitationEmail}>{invitation.phone}</Text>
 			</View>
 			<TouchableOpacity
 				onPress={() => onCancel(invitation.id)}

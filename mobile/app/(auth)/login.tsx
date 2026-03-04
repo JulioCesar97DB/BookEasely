@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
 	ActivityIndicator,
 	KeyboardAvoidingView,
@@ -12,25 +12,57 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native'
+import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated'
 import { useAuth } from '../../lib/auth-context'
 import { colors, fontSize, radius, spacing } from '../../lib/theme'
 
 export default function LoginScreen() {
-	const { signIn } = useAuth()
-	const [email, setEmail] = useState('')
-	const [password, setPassword] = useState('')
-	const [showPassword, setShowPassword] = useState(false)
+	const { sendOtp, verifyOtp } = useAuth()
+	const [step, setStep] = useState<'phone' | 'otp'>('phone')
+	const [phone, setPhone] = useState('')
+	const [otpCode, setOtpCode] = useState('')
 	const [error, setError] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
+	const [countdown, setCountdown] = useState(0)
+	const otpInputRef = useRef<TextInput>(null)
 
-	async function handleSignIn() {
-		if (!email.trim() || !password.trim()) {
-			setError('Please fill in all fields')
+	useEffect(() => {
+		if (countdown <= 0) return
+		const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+		return () => clearTimeout(timer)
+	}, [countdown])
+
+	useEffect(() => {
+		if (step === 'otp') {
+			setTimeout(() => otpInputRef.current?.focus(), 300)
+		}
+	}, [step])
+
+	async function handleSendCode() {
+		if (!phone.trim() || phone.trim().length < 10) {
+			setError('Please enter a valid phone number')
 			return
 		}
 		setError(null)
 		setIsLoading(true)
-		const result = await signIn(email.trim(), password)
+		const result = await sendOtp(phone.trim())
+		setIsLoading(false)
+		if (result.error) {
+			setError(result.error)
+			return
+		}
+		setStep('otp')
+		setCountdown(60)
+	}
+
+	async function handleVerifyCode() {
+		if (otpCode.length !== 6) {
+			setError('Please enter the 6-digit code')
+			return
+		}
+		setError(null)
+		setIsLoading(true)
+		const result = await verifyOtp(phone.trim(), otpCode)
 		if (result.error) {
 			setError(result.error)
 			setIsLoading(false)
@@ -38,6 +70,17 @@ export default function LoginScreen() {
 			router.replace('/')
 		}
 	}
+
+	const handleResend = useCallback(async () => {
+		if (countdown > 0) return
+		setError(null)
+		const result = await sendOtp(phone.trim())
+		if (result.error) {
+			setError(result.error)
+			return
+		}
+		setCountdown(60)
+	}, [countdown, phone, sendOtp])
 
 	return (
 		<KeyboardAvoidingView
@@ -57,87 +100,129 @@ export default function LoginScreen() {
 					<Text style={styles.logoText}>BookEasely</Text>
 				</View>
 
-				{/* Header */}
-				<Text style={styles.title}>Welcome back</Text>
-				<Text style={styles.subtitle}>Sign in to your account to continue</Text>
+				{step === 'phone' ? (
+					<Animated.View entering={FadeIn.duration(300)}>
+						<Text style={styles.title}>Welcome back</Text>
+						<Text style={styles.subtitle}>Enter your phone number to sign in</Text>
 
-				{error && (
-					<View style={styles.errorBox}>
-						<Text style={styles.errorText}>{error}</Text>
-					</View>
-				)}
+						{error && (
+							<Animated.View entering={FadeInDown.duration(200)} style={styles.errorBox}>
+								<Text style={styles.errorText}>{error}</Text>
+							</Animated.View>
+						)}
 
-				{/* Form */}
-				<View style={styles.form}>
-					<View style={styles.field}>
-						<Text style={styles.label}>Email</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="you@example.com"
-							placeholderTextColor={colors.foregroundSecondary}
-							value={email}
-							onChangeText={setEmail}
-							keyboardType="email-address"
-							autoCapitalize="none"
-							autoComplete="email"
-						/>
-					</View>
+						<View style={styles.form}>
+							<View style={styles.field}>
+								<Text style={styles.label}>Phone number</Text>
+								<View style={styles.phoneInputContainer}>
+									<Ionicons name="call-outline" size={18} color={colors.foregroundSecondary} style={styles.phoneIcon} />
+									<TextInput
+										style={[styles.input, styles.phoneInput]}
+										placeholder="+1 (555) 000-0000"
+										placeholderTextColor={colors.foregroundSecondary}
+										value={phone}
+										onChangeText={setPhone}
+										keyboardType="phone-pad"
+										autoComplete="tel"
+										autoFocus
+									/>
+								</View>
+							</View>
 
-					<View style={styles.field}>
-						<View style={styles.labelRow}>
-							<Text style={styles.label}>Password</Text>
-							<Link href="/(auth)/reset-password" asChild>
+							<TouchableOpacity
+								style={[styles.button, isLoading && styles.buttonDisabled]}
+								onPress={handleSendCode}
+								disabled={isLoading}
+								activeOpacity={0.8}
+							>
+								{isLoading ? (
+									<ActivityIndicator color={colors.white} size="small" />
+								) : (
+									<Text style={styles.buttonText}>Send Code</Text>
+								)}
+							</TouchableOpacity>
+						</View>
+
+						<View style={styles.footer}>
+							<Text style={styles.footerText}>Don't have an account? </Text>
+							<Link href="/(auth)/signup" asChild>
 								<TouchableOpacity>
-									<Text style={styles.forgotLink}>Forgot password?</Text>
+									<Text style={styles.footerLink}>Sign up</Text>
 								</TouchableOpacity>
 							</Link>
 						</View>
-						<View style={styles.passwordContainer}>
-							<TextInput
-								style={[styles.input, styles.passwordInput]}
-								placeholder="Enter your password"
-								placeholderTextColor={colors.foregroundSecondary}
-								value={password}
-								onChangeText={setPassword}
-								secureTextEntry={!showPassword}
-								autoComplete="current-password"
-							/>
-							<TouchableOpacity
-								style={styles.eyeButton}
-								onPress={() => setShowPassword(!showPassword)}
-							>
-								<Ionicons
-									name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-									size={20}
-									color={colors.foregroundSecondary}
+					</Animated.View>
+				) : (
+					<Animated.View entering={FadeInRight.duration(300)}>
+						<TouchableOpacity
+							style={styles.backButton}
+							onPress={() => { setStep('phone'); setError(null); setOtpCode('') }}
+							activeOpacity={0.7}
+						>
+							<Ionicons name="arrow-back" size={18} color={colors.foregroundSecondary} />
+							<Text style={styles.backText}>Back</Text>
+						</TouchableOpacity>
+
+						<View style={styles.otpHeader}>
+							<Animated.View entering={FadeIn.delay(100).duration(300)} style={styles.shieldCircle}>
+								<Ionicons name="shield-checkmark-outline" size={32} color={colors.primary} />
+							</Animated.View>
+							<Text style={styles.title}>Enter verification code</Text>
+							<Text style={styles.subtitle}>
+								We sent a 6-digit code to{' '}
+								<Text style={styles.phoneHighlight}>{phone}</Text>
+							</Text>
+						</View>
+
+						{error && (
+							<Animated.View entering={FadeInDown.duration(200)} style={styles.errorBox}>
+								<Text style={styles.errorText}>{error}</Text>
+							</Animated.View>
+						)}
+
+						<View style={styles.form}>
+							<View style={styles.field}>
+								<Text style={styles.label}>Verification code</Text>
+								<TextInput
+									ref={otpInputRef}
+									style={[styles.input, styles.otpInput]}
+									placeholder="000000"
+									placeholderTextColor={colors.foregroundSecondary}
+									value={otpCode}
+									onChangeText={(text) => setOtpCode(text.replace(/\D/g, '').slice(0, 6))}
+									keyboardType="number-pad"
+									maxLength={6}
+									autoComplete="one-time-code"
 								/>
+							</View>
+
+							<TouchableOpacity
+								style={[styles.button, isLoading && styles.buttonDisabled]}
+								onPress={handleVerifyCode}
+								disabled={isLoading}
+								activeOpacity={0.8}
+							>
+								{isLoading ? (
+									<ActivityIndicator color={colors.white} size="small" />
+								) : (
+									<Text style={styles.buttonText}>Verify & Sign In</Text>
+								)}
 							</TouchableOpacity>
 						</View>
-					</View>
 
-					<TouchableOpacity
-						style={[styles.button, isLoading && styles.buttonDisabled]}
-						onPress={handleSignIn}
-						disabled={isLoading}
-						activeOpacity={0.8}
-					>
-						{isLoading ? (
-							<ActivityIndicator color={colors.white} size="small" />
-						) : (
-							<Text style={styles.buttonText}>Sign In</Text>
-						)}
-					</TouchableOpacity>
-				</View>
-
-				{/* Footer */}
-				<View style={styles.footer}>
-					<Text style={styles.footerText}>Don't have an account? </Text>
-					<Link href="/(auth)/signup" asChild>
-						<TouchableOpacity>
-							<Text style={styles.footerLink}>Sign up</Text>
-						</TouchableOpacity>
-					</Link>
-				</View>
+						<View style={styles.resendContainer}>
+							{countdown > 0 ? (
+								<Text style={styles.resendText}>
+									Resend code in <Text style={styles.countdownText}>{countdown}s</Text>
+								</Text>
+							) : (
+								<TouchableOpacity onPress={handleResend} activeOpacity={0.7}>
+									<Text style={styles.resendLink}>Resend code</Text>
+								</TouchableOpacity>
+							)}
+						</View>
+					</Animated.View>
+				)}
 			</ScrollView>
 		</KeyboardAvoidingView>
 	)
@@ -209,16 +294,6 @@ const styles = StyleSheet.create({
 		fontWeight: '500',
 		color: colors.foreground,
 	},
-	labelRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-	},
-	forgotLink: {
-		fontSize: fontSize.xs,
-		fontWeight: '500',
-		color: colors.primary,
-	},
 	input: {
 		height: 48,
 		borderWidth: 1,
@@ -229,20 +304,23 @@ const styles = StyleSheet.create({
 		color: colors.foreground,
 		backgroundColor: colors.surface,
 	},
-	passwordContainer: {
+	phoneInputContainer: {
 		position: 'relative',
 	},
-	passwordInput: {
-		paddingRight: 48,
-	},
-	eyeButton: {
+	phoneIcon: {
 		position: 'absolute',
-		right: 0,
-		top: 0,
-		height: 48,
-		width: 48,
-		justifyContent: 'center',
-		alignItems: 'center',
+		left: spacing.lg,
+		top: 14,
+		zIndex: 1,
+	},
+	phoneInput: {
+		paddingLeft: spacing.lg + 26,
+	},
+	otpInput: {
+		textAlign: 'center',
+		fontSize: fontSize['2xl'],
+		letterSpacing: 12,
+		fontVariant: ['tabular-nums'],
 	},
 	button: {
 		height: 48,
@@ -270,6 +348,50 @@ const styles = StyleSheet.create({
 		color: colors.foregroundSecondary,
 	},
 	footerLink: {
+		fontSize: fontSize.sm,
+		fontWeight: '600',
+		color: colors.primary,
+	},
+	backButton: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: spacing.xs,
+		marginBottom: spacing.lg,
+	},
+	backText: {
+		fontSize: fontSize.sm,
+		color: colors.foregroundSecondary,
+	},
+	otpHeader: {
+		alignItems: 'center',
+		marginBottom: spacing.lg,
+	},
+	shieldCircle: {
+		width: 64,
+		height: 64,
+		borderRadius: 32,
+		backgroundColor: colors.primaryLight,
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginBottom: spacing.lg,
+	},
+	phoneHighlight: {
+		fontWeight: '600',
+		color: colors.foreground,
+	},
+	resendContainer: {
+		alignItems: 'center',
+		marginTop: spacing['2xl'],
+	},
+	resendText: {
+		fontSize: fontSize.sm,
+		color: colors.foregroundSecondary,
+	},
+	countdownText: {
+		fontWeight: '600',
+		color: colors.foreground,
+	},
+	resendLink: {
 		fontSize: fontSize.sm,
 		fontWeight: '600',
 		color: colors.primary,

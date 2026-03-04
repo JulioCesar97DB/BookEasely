@@ -35,13 +35,13 @@ export function MyInvitations({ onAccepted }: MyInvitationsProps) {
 	useEffect(() => {
 		if (!user) return
 		async function load() {
-			const { data: profile } = await supabase.from('profiles').select('email').eq('id', user!.id).single()
+			const { data: profile } = await supabase.from('profiles').select('phone').eq('id', user!.id).single()
 			if (!profile) { setLoading(false); return }
 
 			const { data } = await supabase
 				.from('worker_invitations')
 				.select('id, business_id, display_name, bio, specialties, invited_by, businesses(name)')
-				.eq('email', profile.email)
+				.eq('phone', profile.phone)
 				.eq('status', 'pending')
 
 			setInvitations((data ?? []) as unknown as PendingInvitation[])

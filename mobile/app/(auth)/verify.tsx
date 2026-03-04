@@ -8,26 +8,20 @@ export default function VerifyScreen() {
 		<View style={styles.container}>
 			<View style={styles.content}>
 				<View style={styles.iconCircle}>
-					<Ionicons name="mail-outline" size={36} color={colors.primary} />
+					<Ionicons name="call-outline" size={36} color={colors.primary} />
 				</View>
 
-				<Text style={styles.title}>Check your email</Text>
+				<Text style={styles.title}>Verification sent</Text>
 				<Text style={styles.subtitle}>
-					We've sent you a verification link. Please check your inbox and click the link to verify your account.
+					Please go back to the login or signup screen to enter your verification code.
 				</Text>
-
-				<View style={styles.infoBox}>
-					<Text style={styles.infoText}>
-						Didn't receive the email? Check your spam folder or try signing up again with a different email.
-					</Text>
-				</View>
 
 				<TouchableOpacity
 					style={styles.outlineButton}
 					onPress={() => router.replace('/(auth)/login')}
 					activeOpacity={0.8}
 				>
-					<Text style={styles.outlineButtonText}>Back to login</Text>
+					<Text style={styles.outlineButtonText}>Go to login</Text>
 				</TouchableOpacity>
 			</View>
 		</View>
@@ -66,19 +60,6 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		lineHeight: 22,
 		paddingHorizontal: spacing.lg,
-	},
-	infoBox: {
-		backgroundColor: colors.surfaceSecondary,
-		borderRadius: radius.md,
-		padding: spacing.lg,
-		marginTop: spacing.sm,
-		width: '100%',
-	},
-	infoText: {
-		fontSize: fontSize.xs,
-		color: colors.foregroundSecondary,
-		textAlign: 'center',
-		lineHeight: 18,
 	},
 	outlineButton: {
 		height: 48,
