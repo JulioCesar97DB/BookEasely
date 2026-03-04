@@ -21,7 +21,8 @@ const actions: QuickAction[] = [
 	{ label: 'Edit Profile', icon: 'storefront-outline', route: '/(tabs)/business/profile', color: colors.primary },
 	{ label: 'Services', icon: 'clipboard-outline', route: '/(tabs)/business/services', color: colors.success },
 	{ label: 'Team', icon: 'people-outline', route: '/(tabs)/business/workers', color: colors.danger },
-	{ label: 'Schedule', icon: 'calendar-outline', route: '/(tabs)/business/schedule', color: colors.info },
+	{ label: 'Calendar', icon: 'calendar', route: '/(tabs)/business/calendar', color: colors.info },
+	{ label: 'Schedule', icon: 'calendar-outline', route: '/(tabs)/business/schedule', color: colors.accentPurple },
 	{ label: 'Hours', icon: 'time-outline', route: '/(tabs)/business/hours', color: colors.accentOrange },
 	{ label: 'Settings', icon: 'settings-outline', route: '/(tabs)/business/settings', color: colors.accentPurple },
 ]
