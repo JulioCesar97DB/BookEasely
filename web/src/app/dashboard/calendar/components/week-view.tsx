@@ -42,7 +42,8 @@ export function WeekView({ weekDates, bookings, businessHours, workerColorMap, o
 	}
 
 	return (
-		<div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+		<div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+			<div className="min-w-[640px]">
 			{/* Day headers */}
 			<div className="grid grid-cols-[60px_repeat(7,1fr)] border-b bg-muted/20">
 				<div className="border-r" />
@@ -126,6 +127,7 @@ export function WeekView({ weekDates, bookings, businessHours, workerColorMap, o
 						<CurrentTimeLine weekDates={weekDates} />
 					</motion.div>
 				</AnimatePresence>
+			</div>
 			</div>
 		</div>
 	)

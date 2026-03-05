@@ -9,6 +9,7 @@ import type { UserRole } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+	BarChart3,
 	Bell,
 	Calendar,
 	CalendarCheck,
@@ -54,6 +55,7 @@ export const workerNav: NavItem[] = [
 
 export const businessNav: NavItem[] = [
 	{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+	{ label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
 	{ label: 'Calendar', href: '/dashboard/calendar', icon: CalendarDays },
 	{ label: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
 	{ label: 'Schedule', href: '/dashboard/schedule', icon: Clock },
