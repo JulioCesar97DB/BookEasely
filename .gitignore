@@ -57,3 +57,7 @@ Thumbs.db
 # Project docs (not tracked)
 CLAUDE.md
 BookEasely-Requirements.md
+
+# Claude Code
+.claude/
+.mcp.json
